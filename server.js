@@ -20,6 +20,11 @@ const PORT = process.env.PORT || 3040;
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
+// Root route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'instructor.html'));
+});
+
 // ─── Session Store ─────────────────────────────────────────────────────────
 
 const sessions = new Map();
