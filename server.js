@@ -353,11 +353,53 @@ app.post('/api/session/:id/advance-phase', (req, res) => {
   const nextPhase = order[idx + 1];
   s.phase = nextPhase;
 
-  // Initialize phase data
+  // Initialize phase data - only clear when ENTERING a voting phase
   if (nextPhase === 'phase_1_debate') {
     s.phase1Votes.clear();
   } else if (nextPhase === 'phase_2_remedy') {
     s.phase2Votes.clear();
+  } else if (nextPhase === 'phase_3_buysell') {
+    // Reveal phase 2 results if not already revealed
+    if (!s.phase2Results.revealed) {
+      const counts = tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation']);
+      const winningRemedy = getWinningRemedy(counts);
+      s.phase2Results = {
+        ...counts,
+        revealed: true,
+        winningRemedy,
+        allVotes: Array.from(s.phase2Votes.values()).map(v => ({ name: v.name, remedy: v.remedy })),
+      };
+      if (['shotgun', 'timedauction'].includes(winningRemedy)) {
+        s.buysellMode = winningRemedy;
+      }
+    }
+
+    // Form buy-sell pairs from students who voted for buy-sell mechanism
+    const buysellVoters = [];
+    for (const [participantId, vote] of s.phase2Votes) {
+      if (['shotgun', 'timedauction'].includes(vote.remedy)) {
+        const p = s.participants.find(x => x.id === participantId);
+        if (p) buysellVoters.push(p);
+      }
+    }
+
+    // Form pairs (even number only)
+    s.buysellPairs = [];
+    for (let i = 0; i + 1 < buysellVoters.length; i += 2) {
+      const pairId = 'pair-' + Math.random().toString(36).slice(2, 8);
+      s.buysellPairs.push({
+        pairId,
+        partnerA: { id: buysellVoters[i].id, name: buysellVoters[i].name, role: 'Lucia' },
+        partnerB: { id: buysellVoters[i + 1].id, name: buysellVoters[i + 1].name, role: 'Marco' },
+        status: 'waiting_for_offer',
+        shotgunOffer: null,
+        shotgunOfferorId: null,
+        shotgunChoice: null,
+        finalPrice: null,
+        timedAuctionLockedPrice: null,
+        timedAuctionLockedBy: null,
+      });
+    }
   }
 
   io.to(s.id).emit('phase_changed', { phase: nextPhase });
