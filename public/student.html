@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notte Bellamonte - Student</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 5px;
+      color: #fff;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    .phase-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #d4af37;
+      color: #000;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .card {
+      background: #2a2a3e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .scenario-intro {
+      background: linear-gradient(135deg, #6b4423 0%, #3d2817 100%);
+      border-left: 4px solid #d4af37;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    .scenario-intro h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: #d4af37;
+    }
+
+    .scenario-intro p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #e0e0e0;
+    }
+
+    .vote-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .vote-btn {
+      padding: 18px;
+      border: 2px solid #555;
+      background: #3a3a4e;
+      color: #e0e0e0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .vote-btn:hover {
+      background: #4a4a5e;
+      border-color: #d4af37;
+      transform: translateX(4px);
+    }
+
+    .vote-btn.active {
+      background: #d4af37;
+      color: #000;
+      border-color: #d4af37;
+    }
+
+    .vote-btn .label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .vote-btn .sublabel {
+      display: block;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .button {
+      padding: 14px 24px;
+      background: #d4af37;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      width: 100%;
+      transition: all 0.2s;
+      margin-top: 15px;
+    }
+
+    .button:hover {
+      background: #e8c547;
+      transform: translateY(-2px);
+    }
+
+    .button:disabled {
+      background: #888;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status-message {
+      background: #3a5a4a;
+      border-left: 4px solid #4ade80;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .error {
+      background: #5a3a3a;
+      border-left-color: #f87171;
+      color: #fca5a5;
+    }
+
+    .vote-count {
+      margin-top: 10px;
+      padding: 10px;
+      background: #2a2a3e;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .vote-count strong {
+      color: #d4af37;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .join-form {
+      background: #2a2a3e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 400px;
+      margin: 50px auto;
+    }
+
+    .join-form h2 {
+      margin-bottom: 20px;
+      color: #d4af37;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      background: #3a3a4e;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #d4af37;
+      background: #4a4a5e;
+    }
+
+    .buysell-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .pair-badge {
+      background: #4a5a6a;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #d4af37;
+    }
+
+    .pair-badge div {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .pair-badge strong {
+      color: #d4af37;
+    }
+
+    .role-label {
+      display: inline-block;
+      padding: 3px 8px;
+      background: #555;
+      border-radius: 3px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+
+    .price-display {
+      font-size: 32px;
+      font-weight: bold;
+      text-align: center;
+      color: #d4af37;
+      padding: 20px;
+      background: #3a3a4e;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+
+    .timed-auction-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .timed-auction-controls button {
+      flex: 1;
+      padding: 14px;
+      background: #d4af37;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .timed-auction-controls button:hover {
+      background: #e8c547;
+    }
+
+    .choice-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .choice-buttons button {
+      flex: 1;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 2px solid #555;
+      border-radius: 6px;
+      background: #3a3a4e;
+      color: #e0e0e0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .choice-buttons button:hover {
+      border-color: #d4af37;
+      background: #4a4a5e;
+    }
+
+    .choice-buttons button.buy {
+      color: #4ade80;
+      border-color: #4ade80;
+    }
+
+    .choice-buttons button.buy:hover {
+      background: rgba(74, 222, 128, 0.1);
+    }
+
+    .choice-buttons button.sell {
+      color: #f87171;
+      border-color: #f87171;
+    }
+
+    .choice-buttons button.sell:hover {
+      background: rgba(248, 113, 113, 0.1);
+    }
+
+    .timer {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #d4af37;
+      padding: 15px;
+      background: #3a3a4e;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+
+    .no-pair-message {
+      background: #4a5a6a;
+      border-left: 4px solid #fbbf24;
+      padding: 20px;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .no-pair-message p {
+      margin-bottom: 10px;
+    }
+
+    .phase-result {
+      background: #3a5a4a;
+      border-left: 4px solid #4ade80;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .phase-result h3 {
+      color: #4ade80;
+      margin-bottom: 10px;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 14px;
+    }
+
+    .result-item strong {
+      color: #d4af37;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="join-form">
+      <h2>Notte Bellamonte Winery</h2>
+      <p style="color: #aaa; margin-bottom: 20px; font-size: 13px;">A Corporate Governance Simulation</p>
+
+      <div class="form-group">
+        <label>Session ID</label>
+        <input type="text" id="sessionIdInput" placeholder="e.g., s12abc3def" autocomplete="off">
+      </div>
+
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="nameInput" placeholder="e.g., Alice" autocomplete="off">
+      </div>
+
+      <button class="button" onclick="joinSession()">Join Session</button>
+      <div id="loginError" class="status-message error hidden" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- MAIN APP (hidden initially) -->
+    <div id="mainApp" class="hidden">
+      <div class="header">
+        <h1>🍷 Notte Bellamonte Winery</h1>
+        <p id="phaseText"></p>
+        <span class="phase-badge" id="phaseBadge"></span>
+      </div>
+
+      <!-- PHASE 1: DEBATE & VOTE -->
+      <div id="phase1Container" class="hidden">
+        <div class="card">
+          <div class="scenario-intro">
+            <h2>The Scenario</h2>
+            <p>Lucia and Marco are 50/50 co-owners of Notte Bellamonte Winery. They have no shareholder agreement, no shotgun clause, and no dispute resolution mechanism.</p>
+            <p style="margin-top: 12px;">Lucia wants aggressive expansion. Marco wants to maintain status quo. They are deadlocked. Nothing gets decided. Dividends don't get declared. Company stalls.</p>
+            <p style="margin-top: 12px;"><strong>Lucia files for a court remedy. The question: What legal doctrine applies?</strong></p>
+          </div>
+
+          <h3 style="margin-bottom: 15px; margin-top: 20px;">Your Vote: What legal remedy applies?</h3>
+
+          <div class="vote-buttons">
+            <button class="vote-btn" onclick="votePhase1('oppression')">
+              <span class="label">Oppression (s.241 CBCA)</span>
+              <span class="sublabel">Lucia's reasonable expectations were violated; she seeks a court remedy</span>
+            </button>
+            <button class="vote-btn" onclick="votePhase1('dissolution')">
+              <span class="label">Dissolution (s.214 CBCA)</span>
+              <span class="sublabel">Company is deadlocked; it should be wound up entirely</span>
+            </button>
+            <button class="vote-btn" onclick="votePhase1('partnership')">
+              <span class="label">Partnership Analogy</span>
+              <span class="sublabel">Apply quasi-partnership principles (Ebrahimi test)</span>
+            </button>
+          </div>
+
+          <div id="phase1Submitted" class="status-message hidden">
+            ✓ Your vote submitted. Waiting for others to vote...
+            <div class="vote-count" id="phase1VoteCount"></div>
+          </div>
+
+          <div id="phase1Error" class="status-message error hidden"></div>
+        </div>
+      </div>
+
+      <!-- PHASE 2: REMEDY SELECTION -->
+      <div id="phase2Container" class="hidden">
+        <div class="card">
+          <div class="phase-result" id="phase1ResultDisplay"></div>
+
+          <h3 style="margin-bottom: 15px;">Phase 2: What remedy should the court impose?</h3>
+
+          <div class="vote-buttons">
+            <button class="vote-btn" onclick="votePhase2('buyout')">
+              <span class="label">Buyout</span>
+              <span class="sublabel">One party buys out the other at fair market value</span>
+            </button>
+            <button class="vote-btn" onclick="votePhase2('shotgun')">
+              <span class="label">Shotgun Mechanism</span>
+              <span class="sublabel">One names a price; the other chooses to buy or sell</span>
+            </button>
+            <button class="vote-btn" onclick="votePhase2('timedauction')">
+              <span class="label">Timed Auction</span>
+              <span class="sublabel">Price drops every second; first to lock in wins</span>
+            </button>
+            <button class="vote-btn" onclick="votePhase2('liquidation')">
+              <span class="label">Liquidation</span>
+              <span class="sublabel">Company is wound up; assets sold; proceeds distributed</span>
+            </button>
+          </div>
+
+          <div id="phase2Submitted" class="status-message hidden">
+            ✓ Your vote submitted. Waiting for others to vote...
+            <div class="vote-count" id="phase2VoteCount"></div>
+          </div>
+
+          <div id="phase2Error" class="status-message error hidden"></div>
+        </div>
+      </div>
+
+      <!-- PHASE 3: BUY-SELL EXECUTION -->
+      <div id="phase3Container" class="hidden">
+        <div class="card">
+          <div class="phase-result" id="phase2ResultDisplay"></div>
+
+          <h3 style="margin-bottom: 15px;">Phase 3: Execute the Buy-Sell Mechanism</h3>
+
+          <!-- If no pair -->
+          <div id="noPairMessage" class="no-pair-message hidden">
+            <p>The class voted for a remedy other than buy-sell (e.g., liquidation or buyout).</p>
+            <p>You are observing this phase. Results will be displayed when the simulation completes.</p>
+          </div>
+
+          <!-- If in a pair: SHOTGUN -->
+          <div id="shotgunContainer" class="hidden buysell-container">
+            <div class="pair-badge">
+              <div>
+                <strong id="partnerA">--</strong>
+                <span class="role-label" id="roleA">Lucia</span>
+              </div>
+              <div>
+                vs
+              </div>
+              <div>
+                <strong id="partnerB">--</strong>
+                <span class="role-label" id="roleB">Marco</span>
+              </div>
+            </div>
+
+            <div id="shotgunOfferor" class="hidden">
+              <p style="margin-bottom: 12px; font-size: 14px; color: #aaa;">You are the Offeror. Name a price for your shares.</p>
+              <div style="display: flex; gap: 12px;">
+                <input type="number" id="priceInput" placeholder="e.g., 2000000" style="flex: 1; padding: 12px; background: #3a3a4e; border: 1px solid #555; border-radius: 4px; color: #e0e0e0;">
+                <button class="button" onclick="submitShotgunOffer()" style="flex: 0 0 100px; margin-top: 0;">Submit</button>
+              </div>
+            </div>
+
+            <div id="shotgunOfferee" class="hidden">
+              <p style="margin-bottom: 12px; font-size: 14px; color: #aaa;">Waiting for the offeror to set a price...</p>
+              <div class="price-display hidden" id="priceWaitingDisplay">Waiting...</div>
+              <div id="choiceContainer" class="hidden">
+                <p style="margin-bottom: 12px; font-size: 14px; color: #aaa;">The price is set. Choose:</p>
+                <div class="choice-buttons">
+                  <button class="buy" onclick="respondShotgun('buy')">💰 BUY at this price</button>
+                  <button class="sell" onclick="respondShotgun('sell')">📊 SELL at this price</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- If in a pair: TIMED AUCTION -->
+          <div id="timedAuctionContainer" class="hidden buysell-container">
+            <div class="pair-badge">
+              <div>
+                <strong id="partnerAT">--</strong>
+                <span class="role-label" id="roleAT">Lucia</span>
+              </div>
+              <div>vs</div>
+              <div>
+                <strong id="partnerBT">--</strong>
+                <span class="role-label" id="roleBT">Marco</span>
+              </div>
+            </div>
+
+            <p style="margin-bottom: 12px; font-size: 14px; color: #aaa;">Dutch Auction: Price starts at $3.0M and drops $50K every second.</p>
+
+            <div class="price-display" id="currentPrice">$3,000,000</div>
+
+            <div id="lockMessage" class="status-message hidden">
+              ✓ Price locked! The other party is choosing...
+            </div>
+
+            <div id="choiceWaitingContainer" class="hidden">
+              <p style="margin-bottom: 12px; font-size: 14px; color: #aaa;">Price locked at $<span id="lockedPrice">--</span>. Your choice:</p>
+              <div class="choice-buttons">
+                <button class="buy" onclick="respondTimed('buy')">💰 BUY</button>
+                <button class="sell" onclick="respondTimed('sell')">📊 SELL</button>
+              </div>
+            </div>
+
+            <div id="lockButtonContainer" class="hidden">
+              <button class="button" onclick="lockTimedPrice()" style="margin-top: 0;">🔒 Lock Price & Wait for Choice</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="student.js"></script>
+</body>
+</html>

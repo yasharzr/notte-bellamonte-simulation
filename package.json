@@ -1,0 +1,16 @@
+{
+  "name": "notte-bellamonte-simulation",
+  "version": "1.0.0",
+  "description": "Notte Bellamonte Three-Phase Corporate Governance Classroom Simulation",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["corporate-governance", "cbca", "classroom", "simulation"],
+  "author": "Yashar",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.0"
+  }
+}

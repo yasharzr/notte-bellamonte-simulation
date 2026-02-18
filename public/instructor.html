@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notte Bellamonte - Instructor Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #6b4423 0%, #3d2817 100%);
+      border: 1px solid #d4af37;
+      padding: 25px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      color: #d4af37;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    .session-info {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .session-info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .session-info-item label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #aaa;
+      letter-spacing: 1px;
+    }
+
+    .session-info-item value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #d4af37;
+      font-family: 'Courier New', monospace;
+    }
+
+    .controls {
+      background: #2a2a3e;
+      border: 1px solid #444;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .phase-display {
+      background: #3a3a4e;
+      padding: 15px 20px;
+      border-radius: 6px;
+      border-left: 4px solid #d4af37;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .phase-display .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #aaa;
+      letter-spacing: 1px;
+    }
+
+    .phase-display .value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #d4af37;
+      margin-top: 5px;
+    }
+
+    .button {
+      padding: 12px 24px;
+      background: #d4af37;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .button:hover {
+      background: #e8c547;
+      transform: translateY(-2px);
+    }
+
+    .button:disabled {
+      background: #888;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .card {
+      background: #2a2a3e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      color: #d4af37;
+      margin-bottom: 20px;
+      font-size: 18px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 12px;
+    }
+
+    .vote-chart {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .vote-bar {
+      background: #3a3a4e;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #d4af37;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .vote-bar .label {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .vote-bar .count {
+      font-size: 20px;
+      font-weight: bold;
+      color: #d4af37;
+    }
+
+    .status-message {
+      background: #3a5a4a;
+      border-left: 4px solid #4ade80;
+      padding: 15px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #aaa;
+      text-align: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .vote-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .vote-table th {
+      text-align: left;
+      padding: 12px;
+      background: #3a3a4e;
+      border-bottom: 2px solid #444;
+      font-weight: 600;
+      color: #d4af37;
+    }
+
+    .vote-table td {
+      padding: 12px;
+      border-bottom: 1px solid #444;
+    }
+
+    .vote-table tr:hover {
+      background: #3a3a4e;
+    }
+
+    .pair-row {
+      display: flex;
+      gap: 15px;
+      padding: 15px;
+      background: #3a3a4e;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+
+    .pair-row .pair-names {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .pair-row .status {
+      padding: 4px 8px;
+      background: #4a5a6a;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+
+    .pair-row.complete {
+      background: rgba(74, 222, 128, 0.1);
+      border-left: 4px solid #4ade80;
+    }
+
+    .pair-row.complete .status {
+      background: #4ade80;
+      color: #000;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .button-secondary {
+      padding: 10px 16px;
+      background: #3a3a4e;
+      color: #d4af37;
+      border: 1px solid #d4af37;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .button-secondary:hover {
+      background: #d4af37;
+      color: #000;
+    }
+
+    .participant-stat {
+      background: #3a3a4e;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #d4af37;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .participant-stat .label {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .participant-stat .value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #d4af37;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header">
+      <h1>🍷 Notte Bellamonte Simulation</h1>
+      <p>Instructor Dashboard</p>
+      <div class="session-info">
+        <div class="session-info-item">
+          <label>Session ID</label>
+          <value id="sessionDisplay">--</value>
+        </div>
+        <div class="session-info-item">
+          <label>Participants</label>
+          <value id="participantCount">0</value>
+        </div>
+        <div class="session-info-item">
+          <label>Current Phase</label>
+          <value id="phaseDisplay">LOBBY</value>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls">
+      <div class="phase-display">
+        <div class="label">Current Phase</div>
+        <div class="value" id="currentPhaseLabel">Lobby</div>
+      </div>
+      <button class="button" onclick="advancePhase()" id="advanceBtn">Advance to Phase 1</button>
+    </div>
+
+    <!-- PHASE 1: LEGAL FRAMEWORK VOTING -->
+    <div id="phase1Card" class="card hidden">
+      <h2>Phase 1: Legal Framework Voting</h2>
+
+      <div class="participant-stat">
+        <div class="label">Votes Submitted</div>
+        <div class="value" id="phase1VoteCount">0 / 0</div>
+      </div>
+
+      <div id="phase1VotingInProgress" class="status-message">
+        Voting in progress...
+      </div>
+
+      <div id="phase1VotesHidden" class="vote-chart">
+        <div class="vote-bar">
+          <span class="label">Oppression (s.241)</span>
+          <span class="count" id="oppression-count">0</span>
+        </div>
+        <div class="vote-bar">
+          <span class="label">Dissolution (s.214)</span>
+          <span class="count" id="dissolution-count">0</span>
+        </div>
+        <div class="vote-bar">
+          <span class="label">Partnership Analogy</span>
+          <span class="count" id="partnership-count">0</span>
+        </div>
+      </div>
+
+      <div id="phase1VotesRevealed" class="hidden">
+        <table class="vote-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Vote</th>
+            </tr>
+          </thead>
+          <tbody id="phase1VoteDetails"></tbody>
+        </table>
+      </div>
+
+      <button class="button-secondary" onclick="revealPhase1()">Reveal Detailed Results</button>
+    </div>
+
+    <!-- PHASE 2: REMEDY SELECTION VOTING -->
+    <div id="phase2Card" class="card hidden">
+      <h2>Phase 2: Remedy Selection Voting</h2>
+
+      <div class="participant-stat">
+        <div class="label">Votes Submitted</div>
+        <div class="value" id="phase2VoteCount">0 / 0</div>
+      </div>
+
+      <div id="phase2VotingInProgress" class="status-message">
+        Voting in progress...
+      </div>
+
+      <div id="phase2VotesHidden" class="vote-chart">
+        <div class="vote-bar">
+          <span class="label">Buyout</span>
+          <span class="count" id="buyout-count">0</span>
+        </div>
+        <div class="vote-bar">
+          <span class="label">Shotgun</span>
+          <span class="count" id="shotgun-count">0</span>
+        </div>
+        <div class="vote-bar">
+          <span class="label">Timed Auction</span>
+          <span class="count" id="timedauction-count">0</span>
+        </div>
+        <div class="vote-bar">
+          <span class="label">Liquidation</span>
+          <span class="count" id="liquidation-count">0</span>
+        </div>
+      </div>
+
+      <div id="phase2Winner" class="hidden" style="background: #3a5a4a; border-left: 4px solid #4ade80; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+        <p style="font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Winning Remedy</p>
+        <p style="font-size: 20px; font-weight: bold; color: #4ade80; margin-top: 5px;" id="winnerDisplay">--</p>
+      </div>
+
+      <div id="phase2VotesRevealed" class="hidden">
+        <table class="vote-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Remedy</th>
+            </tr>
+          </thead>
+          <tbody id="phase2VoteDetails"></tbody>
+        </table>
+      </div>
+
+      <button class="button-secondary" onclick="revealPhase2()">Reveal Detailed Results</button>
+    </div>
+
+    <!-- PHASE 3: BUY-SELL EXECUTION -->
+    <div id="phase3Card" class="card hidden">
+      <h2>Phase 3: Buy-Sell Execution</h2>
+
+      <div class="participant-stat">
+        <div class="label">Pairs Formed</div>
+        <div class="value" id="pairCount">0</div>
+      </div>
+
+      <div id="buysellPairsContainer">
+        <!-- Pairs will be rendered here -->
+      </div>
+
+      <button class="button-secondary" onclick="loadSession()">Refresh Status</button>
+    </div>
+
+    <!-- CREATE SESSION (if no session) -->
+    <div id="createSessionCard" class="card">
+      <h2>Create New Session</h2>
+      <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <input type="text" id="sessionNameInput" placeholder="Session Name (optional)" style="flex: 1; min-width: 200px; padding: 12px; background: #3a3a4e; border: 1px solid #555; border-radius: 4px; color: #e0e0e0;">
+        <button class="button" onclick="createSession()">Create Session</button>
+      </div>
+      <div id="createError" style="margin-top: 15px; color: #f87171; font-size: 13px; display: none;"></div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="instructor.js"></script>
+</body>
+</html>

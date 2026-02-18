@@ -1,0 +1,105 @@
+🍷 NOTTE BELLAMONTE SIMULATION — QUICK START
+
+================================================
+STEP 1: Install Node.js (one-time setup)
+================================================
+
+Download from: https://nodejs.org/
+Choose LTS (Long-Term Support) version
+Install with default settings
+
+
+================================================
+STEP 2: Install Dependencies (first time only)
+================================================
+
+Open Terminal/Command Prompt
+Navigate to the notte-bellamonte-simulation folder
+Run: npm install
+
+
+================================================
+STEP 3: Start the Server
+================================================
+
+In Terminal/Command Prompt, run:
+  npm start
+
+You should see:
+  🍷 Notte Bellamonte Simulation Server
+  📍 http://localhost:3040
+
+
+================================================
+STEP 4: Open in Browser
+================================================
+
+FOR YOU (INSTRUCTOR):
+  1. Open http://localhost:3040/instructor.html
+  2. Click "Create Session"
+  3. Copy the Session ID
+  4. Share with students
+
+FOR STUDENTS:
+  1. Open http://localhost:3040/student.html
+  2. Paste the Session ID
+  3. Enter your name
+  4. Click "Join Session"
+
+
+================================================
+FOR CLASSROOM (University WiFi)
+================================================
+
+BEFORE CLASS:
+  1. Connect to WiFi
+  2. Find your IP address:
+     - Mac: Open Terminal, type: ifconfig
+     - Windows: Open CMD, type: ipconfig
+     Look for "192.168.X.XXX" or similar
+
+  3. Share with students:
+     Instructor: http://YOUR.IP.ADDRESS:3040/instructor.html
+     Students: http://YOUR.IP.ADDRESS:3040/student.html
+
+
+================================================
+THE FLOW
+================================================
+
+1. Create session (you)
+2. Students join (them)
+3. Click "Advance to Phase 1"
+4. Students vote: oppression vs dissolution
+5. Reveal results when all have voted
+6. Click "Advance to Phase 2"
+7. Students vote: buyout vs shotgun vs timed vs liquidation
+8. Reveal results
+9. Click "Advance to Phase 3"
+10. Pairs execute buy-sell (if selected)
+
+
+================================================
+TROUBLESHOOTING
+================================================
+
+Server won't start?
+  → npm install
+  → PORT=3041 npm start
+
+Can't find IP address?
+  → Mac/Linux: ipconfig OR hostname -I
+  → Windows: ipconfig
+
+Students can't connect?
+  → Same WiFi? YES ✓
+  → Right IP address? Double-check
+  → Server running? Check terminal
+
+
+================================================
+THAT'S IT!
+
+Your pilot is ready. Good luck with your team! 🍷
+
+================================================
