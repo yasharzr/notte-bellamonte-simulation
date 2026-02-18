@@ -37,8 +37,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
   socket.on('shotgun_offer_made', (data) => {
     if (currentPair && currentPair.pairId === data.pairId) {
+      currentPair.shotgunOffer = data.price;
+      currentPair.status = 'offered';
       displayShotgunOffer(data);
     }
+    // Update live display for all students
+    loadSession();
   });
 
   socket.on('timed_price_locked', (data) => {
@@ -347,6 +351,46 @@ function displayShotgunOffer(data) {
   document.getElementById('priceWaitingDisplay').textContent = `$${data.price.toLocaleString()}`;
   document.getElementById('priceWaitingDisplay').classList.remove('hidden');
   document.getElementById('choiceContainer').classList.remove('hidden');
+
+  // Show live display to everyone
+  updateLiveShotgunDisplay();
+}
+
+function updateLiveShotgunDisplay() {
+  if (!currentPair) return;
+
+  const container = document.getElementById('liveShotgunContent');
+
+  if (currentPair.status === 'waiting_for_offer') {
+    container.innerHTML = `
+      <p style="font-size: 16px; color: #aaa; margin-bottom: 20px;">Waiting for offeror to set price...</p>
+      <div style="font-size: 14px; color: #d4af37;">
+        <strong>${currentPair.partnerA.name}</strong> (Offeror) ⚔️ <strong>${currentPair.partnerB.name}</strong> (Offeree)
+      </div>
+    `;
+  } else if (currentPair.status === 'offered') {
+    container.innerHTML = `
+      <div style="font-size: 48px; font-weight: bold; color: #d4af37; margin: 20px 0;">$${currentPair.shotgunOffer.toLocaleString()}</div>
+      <p style="font-size: 14px; color: #aaa; margin-bottom: 20px;">Offeror: <strong style="color: #fff;">${currentPair.partnerA.name}</strong></p>
+      <p style="font-size: 18px; color: #fff; margin-bottom: 20px;"><strong>${currentPair.partnerB.name}</strong> is choosing...</p>
+      <div style="display: flex; gap: 20px; justify-content: center; margin-top: 25px;">
+        <div style="padding: 15px 25px; background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 6px; color: #4ade80; font-weight: 600;">💰 BUY</div>
+        <div style="padding: 15px 25px; background: rgba(248, 113, 113, 0.2); border: 2px solid #f87171; border-radius: 6px; color: #f87171; font-weight: 600;">📊 SELL</div>
+      </div>
+    `;
+  } else if (currentPair.status === 'complete') {
+    const choice = currentPair.shotgunChoice === 'buy' ? '💰 BOUGHT' : '📊 SOLD';
+    const choiceColor = currentPair.shotgunChoice === 'buy' ? '#4ade80' : '#f87171';
+    container.innerHTML = `
+      <div style="font-size: 48px; font-weight: bold; color: #d4af37; margin: 20px 0;">$${currentPair.finalPrice.toLocaleString()}</div>
+      <p style="font-size: 16px; color: #aaa; margin-bottom: 20px;">
+        <strong style="color: #fff;">${currentPair.partnerB.name}</strong> chose to <span style="color: ${choiceColor};">${choice}</span>
+      </p>
+      <div style="padding: 15px; background: #3a3a4e; border-radius: 6px; margin-top: 15px;">
+        <p style="font-size: 13px; color: #aaa;">✓ Transaction Complete</p>
+      </div>
+    `;
+  }
 }
 
 function respondShotgun(choice) {
@@ -435,5 +479,9 @@ function respondTimed(choice) {
 }
 
 function displayBuySellComplete(data) {
-  // Results handled by individual phase containers
+  // Update live display
+  loadSession();
+  if (currentPair) {
+    updateLiveShotgunDisplay();
+  }
 }
