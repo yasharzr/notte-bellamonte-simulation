@@ -21,6 +21,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   socket.on('participant_joined', (data) => {
+    console.log('Participant joined:', data);
     loadSession();
   });
 
@@ -257,6 +258,7 @@ function renderPhase3() {
   const container = document.getElementById('buysellPairsContainer');
   if (pairs.length === 0) {
     container.innerHTML = '<p style="color: #aaa; font-size: 13px;">Forming pairs... This will be populated once Phase 2 voting is revealed.</p>';
+    document.getElementById('liveShotgunContainer').classList.add('hidden');
     return;
   }
 
@@ -277,6 +279,57 @@ function renderPhase3() {
       </div>
     `;
   }).join('');
+
+  // Show live shotgun sale display
+  renderLiveShotgunSale(pairs);
+}
+
+function renderLiveShotgunSale(pairs) {
+  const activePair = pairs.find(p => p.status !== 'complete');
+
+  if (!activePair) {
+    document.getElementById('liveShotgunContainer').classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('liveShotgunContainer').classList.remove('hidden');
+
+  if (activePair.status === 'waiting_for_offer') {
+    document.getElementById('shotgunLiveContent').innerHTML = `
+      <div style="text-align: center; padding: 30px;">
+        <p style="font-size: 16px; color: #aaa; margin-bottom: 20px;">Waiting for offeror to set price...</p>
+        <div style="font-size: 14px; color: #d4af37;">
+          <strong>${activePair.partnerA.name}</strong> (Offeror) ⚔️ <strong>${activePair.partnerB.name}</strong> (Offeree)
+        </div>
+      </div>
+    `;
+  } else if (activePair.status === 'offered') {
+    document.getElementById('shotgunLiveContent').innerHTML = `
+      <div style="text-align: center; padding: 30px;">
+        <div style="font-size: 48px; font-weight: bold; color: #d4af37; margin: 20px 0;">$${activePair.shotgunOffer.toLocaleString()}</div>
+        <p style="font-size: 14px; color: #aaa; margin-bottom: 20px;">Offeror: <strong style="color: #fff;">${activePair.partnerA.name}</strong></p>
+        <p style="font-size: 18px; color: #fff; margin-bottom: 20px;"><strong>${activePair.partnerB.name}</strong> is choosing...</p>
+        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 25px;">
+          <div style="padding: 15px 25px; background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 6px; color: #4ade80; font-weight: 600;">💰 BUY</div>
+          <div style="padding: 15px 25px; background: rgba(248, 113, 113, 0.2); border: 2px solid #f87171; border-radius: 6px; color: #f87171; font-weight: 600;">📊 SELL</div>
+        </div>
+      </div>
+    `;
+  } else if (activePair.status === 'complete') {
+    const choice = activePair.shotgunChoice === 'buy' ? '💰 BOUGHT' : '📊 SOLD';
+    const choiceColor = activePair.shotgunChoice === 'buy' ? '#4ade80' : '#f87171';
+    document.getElementById('shotgunLiveContent').innerHTML = `
+      <div style="text-align: center; padding: 30px;">
+        <div style="font-size: 48px; font-weight: bold; color: #d4af37; margin: 20px 0;">$${activePair.finalPrice.toLocaleString()}</div>
+        <p style="font-size: 16px; color: #aaa; margin-bottom: 20px;">
+          <strong style="color: #fff;">${activePair.partnerB.name}</strong> chose to <span style="color: ${choiceColor};">${choice}</span>
+        </p>
+        <div style="padding: 15px; background: #3a3a4e; border-radius: 6px; margin-top: 15px;">
+          <p style="font-size: 13px; color: #aaa;">✓ Transaction Complete</p>
+        </div>
+      </div>
+    `;
+  }
 }
 
 // ─── PHASE ADVANCEMENT ────────────────────────────────────────────
@@ -297,9 +350,9 @@ function advancePhase() {
     });
 }
 
-// Auto-reload dashboard every 2 seconds
+// Auto-reload dashboard every 1 second (to see participant count updates)
 setInterval(() => {
-  if (sessionId && currentPhase !== 'lobby') {
+  if (sessionId) {
     loadSession();
   }
-}, 2000);
+}, 1000);
