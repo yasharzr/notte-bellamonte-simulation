@@ -401,6 +401,7 @@
         <h1>🍷 Notte Bellamonte Winery</h1>
         <p id="phaseText"></p>
         <span class="phase-badge" id="phaseBadge"></span>
+        <div id="roleBadge" class="hidden" style="margin-top:10px; padding:8px 16px; border-radius:20px; font-size:14px; font-weight:700; letter-spacing:1px; display:inline-block;"></div>
       </div>
 
       <!-- PHASE 1: DEBATE & VOTE -->
@@ -408,9 +409,18 @@
         <div class="card">
           <div class="scenario-intro">
             <h2>The Scenario</h2>
-            <p>Lucia and Marco are 50/50 co-owners of Notte Bellamonte Winery. They have no shareholder agreement, no shotgun clause, and no dispute resolution mechanism.</p>
-            <p style="margin-top: 12px;">Lucia wants aggressive expansion. Marco wants to maintain status quo. They are deadlocked. Nothing gets decided. Dividends don't get declared. Company stalls.</p>
-            <p style="margin-top: 12px;"><strong>Lucia files for a court remedy. The question: What legal doctrine applies?</strong></p>
+            <p>Lucia and Marco are 50/50 co-owners of <strong>Notte Bellamonte Winery</strong>, a family vineyard in the Okanagan Valley, BC. They have no shareholder agreement, no shotgun clause, and no dispute resolution mechanism.</p>
+            <p style="margin-top: 12px;">The winery was founded by their father, Enzo Bellamonte, and has been in the family for two generations. Both siblings inherited equal shares after Enzo's passing.</p>
+            <p style="margin-top: 12px;"><strong>Lucia</strong> wants to preserve the family legacy. She believes in maintaining the boutique quality, the family brand, and the artisanal winemaking tradition that Enzo built.</p>
+            <p style="margin-top: 12px;"><strong>Marco</strong> wants to modernize the winery. He envisions automating production, scaling internationally, and potentially taking the company public or bringing in outside investors.</p>
+            <p style="margin-top: 12px;">They are deadlocked. Nothing gets decided. Dividends don't get declared. The company stalls.</p>
+            <p style="margin-top: 12px;"><strong>A court remedy is sought. The question: What legal doctrine applies?</strong></p>
+          </div>
+
+          <!-- Character sheet based on assigned role -->
+          <div id="characterSheet" class="hidden" style="background: #3a3a4e; border-radius: 6px; padding: 18px; margin-bottom: 20px; border-left: 4px solid #d4af37;">
+            <h3 id="characterName" style="color: #d4af37; margin-bottom: 8px;"></h3>
+            <p id="characterDesc" style="font-size: 13px; line-height: 1.6; color: #ccc;"></p>
           </div>
 
           <h3 style="margin-bottom: 15px; margin-top: 20px;">Your Vote: What legal remedy applies?</h3>
@@ -481,10 +491,10 @@
 
           <h3 style="margin-bottom: 15px;">Phase 3: Execute the Buy-Sell Mechanism</h3>
 
-          <!-- If no pair -->
+          <!-- If no pair (odd one out / observer) -->
           <div id="noPairMessage" class="no-pair-message hidden">
-            <p>The class voted for a remedy other than buy-sell (e.g., liquidation or buyout).</p>
-            <p>You are observing this phase. Results will be displayed when the simulation completes.</p>
+            <p style="font-size: 16px; font-weight: 600; color: #fbbf24;">You're the odd one out this round.</p>
+            <p style="margin-top: 8px;">With an odd number of participants, one person sits out. Watch your classmates negotiate in real time!</p>
           </div>
 
           <!-- If in a pair: SHOTGUN -->

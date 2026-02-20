@@ -84,6 +84,14 @@ function renderDashboard() {
   document.getElementById('participantCount').textContent = sessionData.participants.length;
   document.getElementById('phaseDisplay').textContent = currentPhase.toUpperCase();
 
+  // Role counts
+  const lucias = sessionData.lucias || 0;
+  const marcos = sessionData.marcos || 0;
+  document.getElementById('roleCountDisplay').textContent = lucias + ' / ' + marcos;
+
+  // Participant list
+  renderParticipantList();
+
   const phaseLabels = {
     lobby: 'Lobby (Waiting)',
     phase_1_debate: 'Phase 1: Legal Framework Vote',
@@ -127,6 +135,26 @@ function renderDashboard() {
     document.getElementById('phase3Card').classList.remove('hidden');
     renderPhase3();
   }
+}
+
+// ─── PARTICIPANT LIST ─────────────────────────────────────────────
+
+function renderParticipantList() {
+  const card = document.getElementById('participantListCard');
+  const container = document.getElementById('participantList');
+  if (!sessionData.participants || sessionData.participants.length === 0) {
+    card.classList.add('hidden');
+    return;
+  }
+  card.classList.remove('hidden');
+
+  container.innerHTML = sessionData.participants.map(p => {
+    const isLucia = p.role === 'lucia';
+    const bg = isLucia ? '#d4af37' : '#7c8a9e';
+    const color = isLucia ? '#000' : '#fff';
+    const roleLabel = isLucia ? 'Lucia' : 'Marco';
+    return `<span style="padding:6px 12px; background:${bg}; color:${color}; border-radius:20px; font-size:12px; font-weight:600;">${p.name} (${roleLabel})</span>`;
+  }).join('');
 }
 
 // ─── PHASE 1 RENDERING ────────────────────────────────────────────

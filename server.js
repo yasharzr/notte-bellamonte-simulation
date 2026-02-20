@@ -2,7 +2,7 @@
  * Notte Bellamonte Three-Phase Classroom Simulation
  * Phase 1: Legal Framework Voting (Oppression vs Dissolution vs Partnership)
  * Phase 2: Remedy Selection (Buyout, Shotgun, Timed Auction, Liquidation)
- * Phase 3: Buy-Sell Execution (only for pairs who selected buy-sell mechanism)
+ * Phase 3: Buy-Sell Execution (ALL participants paired: Lucia vs Marco)
  */
 
 const express = require('express');
@@ -45,6 +45,7 @@ function mkSession(config) {
     },
     phase: 'lobby', // lobby -> phase_1_debate -> phase_2_remedy -> phase_3_buysell -> complete
     participants: [],
+    roleCounter: 0, // alternates: 0=lucia, 1=marco, 2=lucia, etc.
 
     // Phase 1: Legal Framework Voting
     phase1Votes: new Map(), // participantId -> { choice, submittedAt, name }
@@ -66,11 +67,12 @@ function mkSession(config) {
 
 // ─── Helper Functions ──────────────────────────────────────────────────────
 
-function tallyVotes(voteMap, choices) {
+function tallyVotes(voteMap, choices, field = 'choice') {
   const result = {};
   for (const choice of choices) result[choice] = 0;
   for (const vote of voteMap.values()) {
-    result[vote.choice]++;
+    const val = vote[field];
+    if (val in result) result[val]++;
   }
   return result;
 }
@@ -103,8 +105,10 @@ app.get('/api/session/:id', (req, res) => {
     id: s.id,
     phase: s.phase,
     config: s.config,
-    participants: s.participants.map(p => ({ id: p.id, name: p.name })),
+    participants: s.participants.map(p => ({ id: p.id, name: p.name, role: p.role, status: p.status })),
     participantCount: s.participants.length,
+    lucias: s.participants.filter(p => p.role === 'lucia').length,
+    marcos: s.participants.filter(p => p.role === 'marco').length,
 
     // Phase 1 Results
     phase1Results: s.phase1Results,
@@ -125,12 +129,50 @@ app.post('/api/session/:id/join', (req, res) => {
   if (!s) return res.status(404).json({ error: 'Session not found' });
 
   const { name } = req.body;
-  const participant = { id: Math.random().toString(36).slice(2, 10), name, joinedAt: Date.now() };
+  const role = s.roleCounter % 2 === 0 ? 'lucia' : 'marco';
+  s.roleCounter++;
+
+  const participant = {
+    id: Math.random().toString(36).slice(2, 10),
+    name,
+    role,
+    status: 'active',
+    lastSeen: Date.now(),
+    joinedAt: Date.now(),
+  };
   s.participants.push(participant);
 
-  io.to(s.id).emit('participant_joined', { name, count: s.participants.length });
+  const lucias = s.participants.filter(p => p.role === 'lucia').length;
+  const marcos = s.participants.filter(p => p.role === 'marco').length;
 
-  res.json({ participantId: participant.id, sessionId: s.id });
+  io.to(s.id).emit('participant_joined', { name, role, count: s.participants.length, lucias, marcos });
+
+  res.json({ participantId: participant.id, sessionId: s.id, role });
+});
+
+// Reconnect: student refreshed or lost connection
+app.post('/api/session/:id/reconnect', (req, res) => {
+  const s = sessions.get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Session not found' });
+
+  const { participantId } = req.body;
+  const participant = s.participants.find(p => p.id === participantId);
+
+  if (!participant) {
+    return res.status(404).json({ error: 'not_found' });
+  }
+
+  participant.status = 'active';
+  participant.lastSeen = Date.now();
+
+  res.json({
+    ok: true,
+    participantId: participant.id,
+    name: participant.name,
+    role: participant.role,
+    sessionId: s.id,
+    phase: s.phase,
+  });
 });
 
 // PHASE 1: Vote on legal framework
@@ -195,7 +237,7 @@ app.post('/api/session/:id/vote-phase2', (req, res) => {
   io.to('instructor-' + s.id).emit('phase2_vote_update', {
     votesSubmitted: s.phase2Votes.size,
     votesExpected: s.participants.length,
-    counts: tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation']),
+    counts: tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation'], 'remedy'),
   });
 
   res.json({ ok: true });
@@ -206,7 +248,7 @@ app.post('/api/session/:id/reveal-phase2', (req, res) => {
   const s = sessions.get(req.params.id);
   if (!s) return res.status(404).json({ error: 'Session not found' });
 
-  const counts = tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation']);
+  const counts = tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation'], 'remedy');
   const winningRemedy = getWinningRemedy(counts);
 
   s.phase2Results = {
@@ -216,9 +258,11 @@ app.post('/api/session/:id/reveal-phase2', (req, res) => {
     allVotes: Array.from(s.phase2Votes.values()).map(v => ({ name: v.name, remedy: v.remedy })),
   };
 
-  // Only allow buy-sell mechanisms for Phase 3
+  // Set buy-sell mode based on winning remedy; default to shotgun if non-buy-sell won
   if (['shotgun', 'timedauction'].includes(winningRemedy)) {
     s.buysellMode = winningRemedy;
+  } else {
+    s.buysellMode = 'shotgun';
   }
 
   io.to(s.id).emit('phase2_revealed', s.phase2Results);
@@ -231,23 +275,18 @@ app.post('/api/session/:id/form-buysell-pairs', (req, res) => {
   if (!s) return res.status(404).json({ error: 'Session not found' });
   if (s.phase !== 'phase_3_buysell') return res.status(400).json({ error: 'Not in phase 3' });
 
-  // Get students who voted for buy-sell mechanism
-  const buysellVoters = [];
-  for (const [participantId, vote] of s.phase2Votes) {
-    if (['shotgun', 'timedauction'].includes(vote.remedy)) {
-      const p = s.participants.find(x => x.id === participantId);
-      if (p) buysellVoters.push(p);
-    }
-  }
+  // Pair ALL active participants (Lucia vs Marco)
+  const lucias = s.participants.filter(p => p.role === 'lucia' && p.status === 'active');
+  const marcos = s.participants.filter(p => p.role === 'marco' && p.status === 'active');
 
-  // Form pairs (even number only)
+  const pairCount = Math.min(lucias.length, marcos.length);
   s.buysellPairs = [];
-  for (let i = 0; i + 1 < buysellVoters.length; i += 2) {
+  for (let i = 0; i < pairCount; i++) {
     const pairId = 'pair-' + Math.random().toString(36).slice(2, 8);
     s.buysellPairs.push({
       pairId,
-      partnerA: { id: buysellVoters[i].id, name: buysellVoters[i].name, role: 'Lucia' },
-      partnerB: { id: buysellVoters[i + 1].id, name: buysellVoters[i + 1].name, role: 'Marco' },
+      partnerA: { id: lucias[i].id, name: lucias[i].name, role: 'Lucia' },
+      partnerB: { id: marcos[i].id, name: marcos[i].name, role: 'Marco' },
       status: 'waiting_for_offer',
       shotgunOffer: null,
       shotgunOfferorId: null,
@@ -361,7 +400,7 @@ app.post('/api/session/:id/advance-phase', (req, res) => {
   } else if (nextPhase === 'phase_3_buysell') {
     // Reveal phase 2 results if not already revealed
     if (!s.phase2Results.revealed) {
-      const counts = tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation']);
+      const counts = tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation'], 'remedy');
       const winningRemedy = getWinningRemedy(counts);
       s.phase2Results = {
         ...counts,
@@ -371,26 +410,35 @@ app.post('/api/session/:id/advance-phase', (req, res) => {
       };
       if (['shotgun', 'timedauction'].includes(winningRemedy)) {
         s.buysellMode = winningRemedy;
+      } else {
+        // Default to shotgun for Phase 3 exercise even if class voted buyout/liquidation
+        s.buysellMode = 'shotgun';
       }
     }
 
-    // Form buy-sell pairs from students who voted for buy-sell mechanism
-    const buysellVoters = [];
-    for (const [participantId, vote] of s.phase2Votes) {
-      if (['shotgun', 'timedauction'].includes(vote.remedy)) {
-        const p = s.participants.find(x => x.id === participantId);
-        if (p) buysellVoters.push(p);
-      }
+    // Form buy-sell pairs from ALL active participants (Lucia vs Marco)
+    const lucias = s.participants.filter(p => p.role === 'lucia' && p.status === 'active');
+    const marcos = s.participants.filter(p => p.role === 'marco' && p.status === 'active');
+
+    // Shuffle both arrays for variety
+    for (let i = lucias.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [lucias[i], lucias[j]] = [lucias[j], lucias[i]];
+    }
+    for (let i = marcos.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [marcos[i], marcos[j]] = [marcos[j], marcos[i]];
     }
 
-    // Form pairs (even number only)
+    // Pair each Lucia with a Marco; leftover is observer
+    const pairCount = Math.min(lucias.length, marcos.length);
     s.buysellPairs = [];
-    for (let i = 0; i + 1 < buysellVoters.length; i += 2) {
+    for (let i = 0; i < pairCount; i++) {
       const pairId = 'pair-' + Math.random().toString(36).slice(2, 8);
       s.buysellPairs.push({
         pairId,
-        partnerA: { id: buysellVoters[i].id, name: buysellVoters[i].name, role: 'Lucia' },
-        partnerB: { id: buysellVoters[i + 1].id, name: buysellVoters[i + 1].name, role: 'Marco' },
+        partnerA: { id: lucias[i].id, name: lucias[i].name, role: 'Lucia' },
+        partnerB: { id: marcos[i].id, name: marcos[i].name, role: 'Marco' },
         status: 'waiting_for_offer',
         shotgunOffer: null,
         shotgunOfferorId: null,

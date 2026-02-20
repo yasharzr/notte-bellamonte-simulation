@@ -2,6 +2,25 @@
 
 A simplified web-based simulation for teaching corporate governance (Week 6: CBCA s.241 oppression vs s.214 dissolution) in a 45-minute classroom session.
 
+**Status**: ✅ **Production Ready** (Last update: Feb 18, 2026 - Critical fix deployed)
+
+---
+
+## 📖 Documentation
+
+**New to this project?** Start here:
+- **[SESSION_SUMMARY.md](SESSION_SUMMARY.md)** - Complete status report and testing checklist
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick start guide and typical class flow
+- **[BUG_FIX_REPORT.md](BUG_FIX_REPORT.md)** - Details of latest bug fix (Phase 3 auto-pairing)
+
+**Production URLs:**
+- 🌐 **Live App**: https://notte-bellamonte-simulation-production.up.railway.app
+- 👨‍🏫 **Instructor**: https://notte-bellamonte-simulation-production.up.railway.app/
+- 👥 **Students**: https://notte-bellamonte-simulation-production.up.railway.app/student.html
+- 🐙 **GitHub**: https://github.com/yasharzr/notte-bellamonte-simulation
+
+---
+
 ## Overview
 
 The simulation has **3 phases**:

@@ -3,6 +3,7 @@ let socket;
 let sessionId;
 let participantId;
 let userName;
+let userRole; // 'lucia' or 'marco'
 let currentPair = null;
 let currentPhase = 'lobby';
 
@@ -60,6 +61,13 @@ window.addEventListener('DOMContentLoaded', () => {
   socket.on('participant_joined', (data) => {
     loadSession();
   });
+
+  // ─── AUTO-RECONNECT from sessionStorage ───────────────────────
+  const storedSession = sessionStorage.getItem('nb_sessionId');
+  const storedPid = sessionStorage.getItem('nb_participantId');
+  if (storedSession && storedPid) {
+    autoReconnect(storedSession, storedPid);
+  }
 });
 
 // ─── JOIN SESSION ──────────────────────────────────────────────────
@@ -86,12 +94,21 @@ function joinSession() {
         sessionId = data.sessionId;
         participantId = data.participantId;
         userName = nameInput;
+        userRole = data.role;
+
+        // Persist to sessionStorage for reconnection
+        sessionStorage.setItem('nb_sessionId', sessionId);
+        sessionStorage.setItem('nb_participantId', participantId);
+        sessionStorage.setItem('nb_userName', userName);
+        sessionStorage.setItem('nb_role', userRole);
 
         socket.emit('join_session', { sessionId, role: 'student' });
 
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
 
+        showRoleBadge();
+        showCharacterSheet();
         loadSession();
       }
     })
@@ -102,6 +119,89 @@ function showLoginError(msg) {
   const el = document.getElementById('loginError');
   el.textContent = msg;
   el.classList.remove('hidden');
+}
+
+// ─── AUTO-RECONNECT ─────────────────────────────────────────────────
+
+function autoReconnect(storedSession, storedPid) {
+  fetch(`/api/session/${storedSession}/reconnect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ participantId: storedPid }),
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        // Restore identity
+        sessionId = data.sessionId;
+        participantId = data.participantId;
+        userName = data.name;
+        userRole = data.role;
+
+        socket.emit('join_session', { sessionId, role: 'student' });
+
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+
+        showRoleBadge();
+        showCharacterSheet();
+        loadSession();
+      } else {
+        // Session or participant gone — clear storage, show login
+        sessionStorage.removeItem('nb_sessionId');
+        sessionStorage.removeItem('nb_participantId');
+        sessionStorage.removeItem('nb_userName');
+        sessionStorage.removeItem('nb_role');
+      }
+    })
+    .catch(() => {
+      // Server unreachable — clear storage, show login
+      sessionStorage.removeItem('nb_sessionId');
+      sessionStorage.removeItem('nb_participantId');
+      sessionStorage.removeItem('nb_userName');
+      sessionStorage.removeItem('nb_role');
+    });
+}
+
+function showRoleBadge() {
+  const badge = document.getElementById('roleBadge');
+  if (!badge) return;
+
+  if (userRole === 'lucia') {
+    badge.textContent = 'You are LUCIA';
+    badge.style.background = '#d4af37';
+    badge.style.color = '#000';
+  } else {
+    badge.textContent = 'You are MARCO';
+    badge.style.background = '#7c8a9e';
+    badge.style.color = '#fff';
+  }
+  badge.classList.remove('hidden');
+}
+
+function showCharacterSheet() {
+  const sheet = document.getElementById('characterSheet');
+  const nameEl = document.getElementById('characterName');
+  const descEl = document.getElementById('characterDesc');
+  if (!sheet || !nameEl || !descEl) return;
+
+  if (userRole === 'lucia') {
+    nameEl.textContent = 'Your Role: Lucia Bellamonte';
+    descEl.innerHTML = '<strong>Position:</strong> Preserve the family legacy.<br><br>' +
+      '"We must preserve the family legacy. We remain committed to the vineyard and our brand. No outside buyers. ' +
+      'This winery is what Papa built, and it should stay in the family the way he intended."<br><br>' +
+      '<strong>You believe:</strong> The winery\'s value is in its tradition, boutique quality, and the Bellamonte name. ' +
+      'Modernization would destroy everything your father built.';
+  } else {
+    nameEl.textContent = 'Your Role: Marco Bellamonte';
+    descEl.innerHTML = '<strong>Position:</strong> Modernize and expand.<br><br>' +
+      '"We must adapt to modern times. The market is changing and we need to change with it. ' +
+      'We automate production, scale internationally, and finally branch out."<br><br>' +
+      '<strong>You believe:</strong> The winery is stuck in the past. To survive and grow, it needs investment, ' +
+      'new technology, and possibly outside partners or going public.';
+  }
+
+  sheet.classList.remove('hidden');
 }
 
 // ─── LOAD SESSION STATE ────────────────────────────────────────────
