@@ -94,21 +94,18 @@ function joinSession() {
         sessionId = data.sessionId;
         participantId = data.participantId;
         userName = nameInput;
-        userRole = data.role;
+        userRole = null; // No role until Phase 3
 
         // Persist to sessionStorage for reconnection
         sessionStorage.setItem('nb_sessionId', sessionId);
         sessionStorage.setItem('nb_participantId', participantId);
         sessionStorage.setItem('nb_userName', userName);
-        sessionStorage.setItem('nb_role', userRole);
 
         socket.emit('join_session', { sessionId, role: 'student' });
 
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
 
-        showRoleBadge();
-        showCharacterSheet();
         loadSession();
       }
     })
@@ -136,22 +133,23 @@ function autoReconnect(storedSession, storedPid) {
         sessionId = data.sessionId;
         participantId = data.participantId;
         userName = data.name;
-        userRole = data.role;
+        userRole = data.role || null; // May be null if not yet Phase 3
 
         socket.emit('join_session', { sessionId, role: 'student' });
 
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
 
-        showRoleBadge();
-        showCharacterSheet();
+        if (userRole) {
+          showRoleBadge();
+          showCharacterSheet();
+        }
         loadSession();
       } else {
         // Session or participant gone — clear storage, show login
         sessionStorage.removeItem('nb_sessionId');
         sessionStorage.removeItem('nb_participantId');
         sessionStorage.removeItem('nb_userName');
-        sessionStorage.removeItem('nb_role');
       }
     })
     .catch(() => {
@@ -159,13 +157,12 @@ function autoReconnect(storedSession, storedPid) {
       sessionStorage.removeItem('nb_sessionId');
       sessionStorage.removeItem('nb_participantId');
       sessionStorage.removeItem('nb_userName');
-      sessionStorage.removeItem('nb_role');
     });
 }
 
 function showRoleBadge() {
   const badge = document.getElementById('roleBadge');
-  if (!badge) return;
+  if (!badge || !userRole) return;
 
   if (userRole === 'lucia') {
     badge.textContent = 'You are LUCIA';
@@ -245,6 +242,15 @@ function renderPhase(sessionData) {
     document.getElementById('phase3Container').classList.remove('hidden');
     if (sessionData.phase2Results.revealed) {
       displayPhase2Results(sessionData.phase2Results);
+    }
+    // Discover assigned role from participant list
+    if (!userRole && sessionData.participants) {
+      const me = sessionData.participants.find(p => p.id === participantId);
+      if (me && me.role) {
+        userRole = me.role;
+        showRoleBadge();
+        showCharacterSheet();
+      }
     }
     checkIfInPair(sessionData.buysellPairs, sessionData.buysellMode);
   }

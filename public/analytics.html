@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notte Bellamonte - Data Analysis</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .header {
+      background: linear-gradient(135deg, #6b4423 0%, #3d2817 100%);
+      border: 1px solid #d4af37;
+      padding: 25px; border-radius: 8px; margin-bottom: 25px; text-align: center;
+    }
+    .header h1 { font-size: 28px; color: #d4af37; margin-bottom: 8px; }
+    .header p { font-size: 14px; color: #aaa; }
+    .card {
+      background: #2a2a3e; border: 1px solid #444;
+      border-radius: 8px; padding: 25px; margin-bottom: 20px;
+    }
+    .card h2 { color: #d4af37; margin-bottom: 20px; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 12px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .stat-box {
+      background: #3a3a4e; padding: 18px; border-radius: 6px;
+      border-left: 4px solid #d4af37; text-align: center;
+    }
+    .stat-box .label { font-size: 11px; text-transform: uppercase; color: #aaa; letter-spacing: 1px; }
+    .stat-box .value { font-size: 28px; font-weight: bold; color: #d4af37; margin-top: 6px; }
+    .chart-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto; }
+    .pair-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .pair-table th { text-align: left; padding: 12px; background: #3a3a4e; border-bottom: 2px solid #444; color: #d4af37; font-weight: 600; }
+    .pair-table td { padding: 12px; border-bottom: 1px solid #444; }
+    .pair-table tr:hover { background: #3a3a4e; }
+    .join-form {
+      background: #2a2a3e; border: 1px solid #444; border-radius: 8px;
+      padding: 30px; max-width: 400px; margin: 60px auto; text-align: center;
+    }
+    .join-form h2 { margin-bottom: 15px; color: #d4af37; }
+    .join-form input {
+      width: 100%; padding: 12px; background: #3a3a4e; border: 1px solid #555;
+      border-radius: 4px; color: #e0e0e0; font-size: 14px; margin-bottom: 12px;
+    }
+    .join-form input:focus { outline: none; border-color: #d4af37; }
+    .button {
+      padding: 12px 24px; background: #d4af37; color: #000; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; width: 100%;
+    }
+    .button:hover { background: #e8c547; }
+    .hidden { display: none; }
+    .tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .tag-buy { background: rgba(74,222,128,0.2); color: #4ade80; border: 1px solid #4ade80; }
+    .tag-sell { background: rgba(248,113,113,0.2); color: #f87171; border: 1px solid #f87171; }
+    .tag-pending { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid #fbbf24; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- SESSION ID ENTRY -->
+    <div id="entryScreen" class="join-form">
+      <h2>Data Analysis</h2>
+      <p style="color: #aaa; margin-bottom: 20px; font-size: 13px;">Enter the session ID to view results</p>
+      <input type="text" id="sessionInput" placeholder="Session ID (e.g., s12abc3def)" autocomplete="off">
+      <button class="button" onclick="loadAnalytics()">Load Results</button>
+      <div id="entryError" class="hidden" style="margin-top: 12px; color: #f87171; font-size: 13px;"></div>
+    </div>
+
+    <!-- ANALYTICS DASHBOARD -->
+    <div id="dashboard" class="hidden">
+      <div class="header">
+        <h1>Notte Bellamonte - Data Analysis</h1>
+        <p>Session: <strong id="sessionLabel">--</strong> | Participants: <strong id="participantLabel">0</strong></p>
+      </div>
+
+      <!-- SUMMARY STATS -->
+      <div class="summary-grid" id="summaryStats"></div>
+
+      <!-- PHASE 1 CHART -->
+      <div class="card">
+        <h2>Phase 1: Legal Framework Vote Distribution</h2>
+        <div class="grid-2">
+          <div class="chart-container">
+            <canvas id="phase1Pie"></canvas>
+          </div>
+          <div>
+            <canvas id="phase1Bar"></canvas>
+          </div>
+        </div>
+        <div id="phase1VoteList" style="margin-top: 20px;"></div>
+      </div>
+
+      <!-- PHASE 2 CHART -->
+      <div class="card">
+        <h2>Phase 2: Remedy Selection Distribution</h2>
+        <div class="grid-2">
+          <div class="chart-container">
+            <canvas id="phase2Pie"></canvas>
+          </div>
+          <div>
+            <canvas id="phase2Bar"></canvas>
+          </div>
+        </div>
+        <div id="phase2VoteList" style="margin-top: 20px;"></div>
+      </div>
+
+      <!-- PHASE 3 OUTCOMES -->
+      <div class="card" id="phase3Card">
+        <h2>Phase 3: Buy-Sell Outcomes</h2>
+        <div id="phase3Stats" class="summary-grid" style="margin-bottom: 20px;"></div>
+        <table class="pair-table" id="pairTable">
+          <thead>
+            <tr>
+              <th>Lucia (Offeror)</th>
+              <th>Marco (Offeree)</th>
+              <th>Offer Price</th>
+              <th>Decision</th>
+              <th>Final Price</th>
+            </tr>
+          </thead>
+          <tbody id="pairTableBody"></tbody>
+        </table>
+        <div style="margin-top: 20px;">
+          <canvas id="priceChart"></canvas>
+        </div>
+      </div>
+
+      <!-- CROSS-ANALYSIS -->
+      <div class="card">
+        <h2>Cross-Phase Analysis</h2>
+        <div id="crossAnalysis"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let analyticsData = null;
+
+    function loadAnalytics() {
+      const sid = document.getElementById('sessionInput').value.trim();
+      if (!sid) { showError('Please enter a session ID'); return; }
+
+      fetch(`/api/session/${sid}/analytics`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) { showError(data.error); return; }
+          analyticsData = data;
+          document.getElementById('entryScreen').classList.add('hidden');
+          document.getElementById('dashboard').classList.remove('hidden');
+          render(data);
+        })
+        .catch(err => showError('Connection error: ' + err.message));
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('entryError');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    // Also check URL params
+    const params = new URLSearchParams(window.location.search);
+    const urlSession = params.get('session');
+    if (urlSession) {
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('sessionInput').value = urlSession;
+        loadAnalytics();
+      });
+    }
+
+    function render(data) {
+      document.getElementById('sessionLabel').textContent = data.sessionId;
+      document.getElementById('participantLabel').textContent = data.participantCount;
+
+      renderSummary(data);
+      renderPhase1(data.phase1);
+      renderPhase2(data.phase2);
+      renderPhase3(data.phase3);
+      renderCrossAnalysis(data);
+    }
+
+    function renderSummary(data) {
+      const el = document.getElementById('summaryStats');
+      const p1Winner = getPhase1Winner(data.phase1.counts);
+      const p2Winner = data.phase2.winningRemedy || '--';
+      el.innerHTML = `
+        <div class="stat-box"><div class="label">Participants</div><div class="value">${data.participantCount}</div></div>
+        <div class="stat-box"><div class="label">Phase 1 Winner</div><div class="value" style="font-size:16px;">${p1Winner}</div></div>
+        <div class="stat-box"><div class="label">Phase 2 Winner</div><div class="value" style="font-size:16px;">${formatRemedy(p2Winner)}</div></div>
+        <div class="stat-box"><div class="label">Pairs Completed</div><div class="value">${data.phase3.completedPairs} / ${data.phase3.totalPairs}</div></div>
+      `;
+    }
+
+    function getPhase1Winner(counts) {
+      const entries = Object.entries(counts);
+      entries.sort((a, b) => b[1] - a[1]);
+      if (entries[0][1] === 0) return '--';
+      const labels = { oppression: 'Oppression', dissolution: 'Dissolution', partnership: 'Partnership' };
+      return labels[entries[0][0]] || entries[0][0];
+    }
+
+    function formatRemedy(r) {
+      const map = { buyout: 'Buyout', shotgun: 'Shotgun', timedauction: 'Timed Auction', liquidation: 'Liquidation' };
+      return map[r] || r;
+    }
+
+    // ─── PHASE 1 ─────────────────────────────────────
+    function renderPhase1(p1) {
+      const labels = ['Oppression (s.241)', 'Dissolution (s.214)', 'Partnership Analogy'];
+      const values = [p1.counts.oppression, p1.counts.dissolution, p1.counts.partnership];
+      const colors = ['#d4af37', '#f87171', '#60a5fa'];
+
+      new Chart(document.getElementById('phase1Pie'), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
+        options: {
+          plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 11 } } } },
+          responsive: true,
+        }
+      });
+
+      new Chart(document.getElementById('phase1Bar'), {
+        type: 'bar',
+        data: { labels: ['Oppression', 'Dissolution', 'Partnership'], datasets: [{ data: values, backgroundColor: colors, borderRadius: 4 }] },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { color: '#aaa', stepSize: 1 }, grid: { color: '#333' } },
+            x: { ticks: { color: '#aaa' }, grid: { display: false } }
+          },
+          responsive: true,
+        }
+      });
+
+      // Vote list
+      if (p1.votes.length > 0) {
+        const choiceLabels = { oppression: 'Oppression', dissolution: 'Dissolution', partnership: 'Partnership' };
+        const choiceColors = { oppression: '#d4af37', dissolution: '#f87171', partnership: '#60a5fa' };
+        document.getElementById('phase1VoteList').innerHTML =
+          '<h3 style="color:#aaa; font-size:13px; margin-bottom:10px;">Individual Votes</h3>' +
+          '<div style="display:flex; flex-wrap:wrap; gap:6px;">' +
+          p1.votes.map(v => `<span style="padding:4px 10px; background:${choiceColors[v.choice]}22; border:1px solid ${choiceColors[v.choice]}; border-radius:12px; font-size:11px; color:${choiceColors[v.choice]};">${v.name}: ${choiceLabels[v.choice]}</span>`).join('') +
+          '</div>';
+      }
+    }
+
+    // ─── PHASE 2 ─────────────────────────────────────
+    function renderPhase2(p2) {
+      const labels = ['Buyout', 'Shotgun', 'Timed Auction', 'Liquidation'];
+      const values = [p2.counts.buyout, p2.counts.shotgun, p2.counts.timedauction, p2.counts.liquidation];
+      const colors = ['#4ade80', '#d4af37', '#60a5fa', '#f87171'];
+
+      new Chart(document.getElementById('phase2Pie'), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
+        options: {
+          plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 11 } } } },
+          responsive: true,
+        }
+      });
+
+      new Chart(document.getElementById('phase2Bar'), {
+        type: 'bar',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 4 }] },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { color: '#aaa', stepSize: 1 }, grid: { color: '#333' } },
+            x: { ticks: { color: '#aaa' }, grid: { display: false } }
+          },
+          responsive: true,
+        }
+      });
+
+      if (p2.votes.length > 0) {
+        const remedyColors = { buyout: '#4ade80', shotgun: '#d4af37', timedauction: '#60a5fa', liquidation: '#f87171' };
+        document.getElementById('phase2VoteList').innerHTML =
+          '<h3 style="color:#aaa; font-size:13px; margin-bottom:10px;">Individual Votes</h3>' +
+          '<div style="display:flex; flex-wrap:wrap; gap:6px;">' +
+          p2.votes.map(v => `<span style="padding:4px 10px; background:${remedyColors[v.remedy]}22; border:1px solid ${remedyColors[v.remedy]}; border-radius:12px; font-size:11px; color:${remedyColors[v.remedy]};">${v.name}: ${formatRemedy(v.remedy)}</span>`).join('') +
+          '</div>';
+      }
+    }
+
+    // ─── PHASE 3 ─────────────────────────────────────
+    function renderPhase3(p3) {
+      if (p3.totalPairs === 0) {
+        document.getElementById('phase3Card').innerHTML += '<p style="color:#aaa; text-align:center;">No pairs formed yet.</p>';
+        return;
+      }
+
+      // Stats
+      const prices = p3.pairs.filter(p => p.finalPrice).map(p => p.finalPrice);
+      const avgPrice = prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+      const buys = p3.pairs.filter(p => p.choice === 'buy').length;
+      const sells = p3.pairs.filter(p => p.choice === 'sell').length;
+
+      document.getElementById('phase3Stats').innerHTML = `
+        <div class="stat-box"><div class="label">Mode</div><div class="value" style="font-size:16px;">${p3.mode === 'shotgun' ? 'Shotgun' : 'Timed Auction'}</div></div>
+        <div class="stat-box"><div class="label">Avg Price</div><div class="value" style="font-size:16px;">$${avgPrice.toLocaleString()}</div></div>
+        <div class="stat-box"><div class="label">Buy / Sell</div><div class="value">${buys} / ${sells}</div></div>
+      `;
+
+      // Table
+      const tbody = document.getElementById('pairTableBody');
+      tbody.innerHTML = p3.pairs.map(p => {
+        const choiceTag = p.choice === 'buy'
+          ? '<span class="tag tag-buy">BUY</span>'
+          : p.choice === 'sell'
+            ? '<span class="tag tag-sell">SELL</span>'
+            : '<span class="tag tag-pending">Pending</span>';
+        return `<tr>
+          <td>${p.partnerA}</td>
+          <td>${p.partnerB}</td>
+          <td>${p.offer ? '$' + p.offer.toLocaleString() : '--'}</td>
+          <td>${choiceTag}</td>
+          <td>${p.finalPrice ? '$' + p.finalPrice.toLocaleString() : '--'}</td>
+        </tr>`;
+      }).join('');
+
+      // Price bar chart
+      if (prices.length > 0) {
+        const pairLabels = p3.pairs.filter(p => p.finalPrice).map((p, i) => `Pair ${i + 1}`);
+        const pairColors = p3.pairs.filter(p => p.finalPrice).map(p => p.choice === 'buy' ? '#4ade80' : '#f87171');
+        new Chart(document.getElementById('priceChart'), {
+          type: 'bar',
+          data: {
+            labels: pairLabels,
+            datasets: [{ label: 'Final Price ($)', data: prices, backgroundColor: pairColors, borderRadius: 4 }]
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { color: '#aaa', callback: v => '$' + (v / 1000000).toFixed(1) + 'M' }, grid: { color: '#333' } },
+              x: { ticks: { color: '#aaa' }, grid: { display: false } }
+            },
+            responsive: true,
+          }
+        });
+      }
+    }
+
+    // ─── CROSS ANALYSIS ──────────────────────────────
+    function renderCrossAnalysis(data) {
+      const el = document.getElementById('crossAnalysis');
+      if (!data.phase1.votes.length || !data.phase2.votes.length) {
+        el.innerHTML = '<p style="color:#aaa;">Not enough data for cross-phase analysis.</p>';
+        return;
+      }
+
+      // Build name -> votes mapping
+      const nameMap = {};
+      data.phase1.votes.forEach(v => { nameMap[v.name] = { phase1: v.choice }; });
+      data.phase2.votes.forEach(v => {
+        if (!nameMap[v.name]) nameMap[v.name] = {};
+        nameMap[v.name].phase2 = v.remedy;
+      });
+
+      const choiceLabels = { oppression: 'Oppression', dissolution: 'Dissolution', partnership: 'Partnership' };
+      const remedyLabels = { buyout: 'Buyout', shotgun: 'Shotgun', timedauction: 'Timed Auction', liquidation: 'Liquidation' };
+
+      let html = '<table class="pair-table"><thead><tr><th>Student</th><th>Phase 1 Vote</th><th>Phase 2 Vote</th></tr></thead><tbody>';
+      Object.entries(nameMap).forEach(([name, votes]) => {
+        html += `<tr><td>${name}</td><td>${choiceLabels[votes.phase1] || '--'}</td><td>${remedyLabels[votes.phase2] || '--'}</td></tr>`;
+      });
+      html += '</tbody></table>';
+
+      // Correlation: what did oppression voters choose in Phase 2?
+      const correlations = {};
+      ['oppression', 'dissolution', 'partnership'].forEach(p1 => {
+        correlations[p1] = { buyout: 0, shotgun: 0, timedauction: 0, liquidation: 0 };
+      });
+      Object.values(nameMap).forEach(v => {
+        if (v.phase1 && v.phase2 && correlations[v.phase1]) {
+          correlations[v.phase1][v.phase2]++;
+        }
+      });
+
+      html += '<h3 style="color:#d4af37; margin-top:25px; margin-bottom:12px;">Voting Correlation</h3>';
+      html += '<p style="color:#aaa; font-size:13px; margin-bottom:12px;">How did students who voted for each legal framework choose their remedy?</p>';
+
+      ['oppression', 'dissolution', 'partnership'].forEach(p1 => {
+        const c = correlations[p1];
+        const total = Object.values(c).reduce((a, b) => a + b, 0);
+        if (total === 0) return;
+        html += `<div style="margin-bottom:12px;"><strong style="color:#d4af37;">${choiceLabels[p1]}</strong> voters (${total}):<br>`;
+        html += Object.entries(c).filter(([_, v]) => v > 0).map(([r, v]) =>
+          `<span style="margin-right:12px; font-size:13px;">${remedyLabels[r]}: ${v} (${Math.round(v / total * 100)}%)</span>`
+        ).join('');
+        html += '</div>';
+      });
+
+      el.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

@@ -84,10 +84,16 @@ function renderDashboard() {
   document.getElementById('participantCount').textContent = sessionData.participants.length;
   document.getElementById('phaseDisplay').textContent = currentPhase.toUpperCase();
 
-  // Role counts
+  // Role counts (only visible in Phase 3+)
   const lucias = sessionData.lucias || 0;
   const marcos = sessionData.marcos || 0;
-  document.getElementById('roleCountDisplay').textContent = lucias + ' / ' + marcos;
+  const roleItem = document.getElementById('roleCountItem');
+  if (currentPhase === 'phase_3_buysell' || currentPhase === 'complete') {
+    roleItem.classList.remove('hidden');
+    document.getElementById('roleCountDisplay').textContent = lucias + ' / ' + marcos;
+  } else {
+    roleItem.classList.add('hidden');
+  }
 
   // Participant list
   renderParticipantList();
@@ -149,11 +155,14 @@ function renderParticipantList() {
   card.classList.remove('hidden');
 
   container.innerHTML = sessionData.participants.map(p => {
-    const isLucia = p.role === 'lucia';
-    const bg = isLucia ? '#d4af37' : '#7c8a9e';
-    const color = isLucia ? '#000' : '#fff';
-    const roleLabel = isLucia ? 'Lucia' : 'Marco';
-    return `<span style="padding:6px 12px; background:${bg}; color:${color}; border-radius:20px; font-size:12px; font-weight:600;">${p.name} (${roleLabel})</span>`;
+    if (p.role) {
+      const isLucia = p.role === 'lucia';
+      const bg = isLucia ? '#d4af37' : '#7c8a9e';
+      const color = isLucia ? '#000' : '#fff';
+      const roleLabel = isLucia ? 'Lucia' : 'Marco';
+      return `<span style="padding:6px 12px; background:${bg}; color:${color}; border-radius:20px; font-size:12px; font-weight:600;">${p.name} (${roleLabel})</span>`;
+    }
+    return `<span style="padding:6px 12px; background:#4a5a6a; color:#fff; border-radius:20px; font-size:12px; font-weight:600;">${p.name}</span>`;
   }).join('');
 }
 
