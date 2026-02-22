@@ -1,6 +1,6 @@
 /**
  * Notte Bellamonte Three-Phase Classroom Simulation
- * Phase 1: Legal Framework Voting (Oppression vs Dissolution vs Partnership)
+ * Phase 1: Legal Framework Voting (Oppression vs Dissolution)
  * Phase 2: Remedy Selection (Buyout, Shotgun, Timed Auction, Liquidation)
  * Phase 3: Buy-Sell Execution (ALL participants paired: Lucia vs Marco)
  */
@@ -74,8 +74,8 @@ function mkSession(config) {
       valuationMax: 3500000,
       offerTimeLimitSeconds: 120,
       responseTimeLimitSeconds: 60,
-      timedAuctionStartPrice: 3000000,
-      timedAuctionDropPerSecond: 50000,
+      timedAuctionStartPrice: 5000000,
+      timedAuctionDropPerSecond: 25000,
       ...config
     },
     phase: 'lobby', // lobby -> phase_1_debate -> phase_2_remedy -> phase_3_buysell -> complete
@@ -84,7 +84,7 @@ function mkSession(config) {
 
     // Phase 1: Legal Framework Voting
     phase1Votes: new Map(),
-    phase1Results: { oppression: 0, dissolution: 0, partnership: 0, revealed: false },
+    phase1Results: { oppression: 0, dissolution: 0, revealed: false },
 
     // Phase 2: Remedy Selection Voting
     phase2Votes: new Map(),
@@ -161,19 +161,23 @@ app.post('/api/session/:id/join', (req, res) => {
 
   const { name } = req.body;
 
+  // Assign role at join time (alternating lucia/marco)
+  const role = s.roleCounter % 2 === 0 ? 'lucia' : 'marco';
+  s.roleCounter++;
+
   const participant = {
     id: Math.random().toString(36).slice(2, 10),
     name,
-    role: null,
+    role,
     status: 'active',
     lastSeen: Date.now(),
     joinedAt: Date.now(),
   };
   s.participants.push(participant);
 
-  io.to(s.id).emit('participant_joined', { name, count: s.participants.length });
+  io.to(s.id).emit('participant_joined', { name, count: s.participants.length, role });
 
-  res.json({ participantId: participant.id, sessionId: s.id });
+  res.json({ participantId: participant.id, sessionId: s.id, role });
 });
 
 // Reconnect
@@ -221,7 +225,7 @@ app.post('/api/session/:id/vote-phase1', (req, res) => {
   if (s.phase !== 'phase_1_debate') return res.status(400).json({ error: 'Not in phase 1' });
 
   const { participantId, choice } = req.body;
-  if (!['oppression', 'dissolution', 'partnership'].includes(choice)) {
+  if (!['oppression', 'dissolution'].includes(choice)) {
     return res.status(400).json({ error: 'Invalid choice' });
   }
 
@@ -233,7 +237,7 @@ app.post('/api/session/:id/vote-phase1', (req, res) => {
   io.to('instructor-' + s.id).emit('phase1_vote_update', {
     votesSubmitted: s.phase1Votes.size,
     votesExpected: s.participants.length,
-    counts: tallyVotes(s.phase1Votes, ['oppression', 'dissolution', 'partnership']),
+    counts: tallyVotes(s.phase1Votes, ['oppression', 'dissolution']),
   });
 
   res.json({ ok: true });
@@ -246,7 +250,7 @@ app.post('/api/session/:id/reveal-phase1', (req, res) => {
 
   s.phase1Results.revealed = true;
   s.phase1Results = {
-    ...tallyVotes(s.phase1Votes, ['oppression', 'dissolution', 'partnership']),
+    ...tallyVotes(s.phase1Votes, ['oppression', 'dissolution']),
     revealed: true,
     allVotes: Array.from(s.phase1Votes.values()).map(v => ({ name: v.name, choice: v.choice })),
   };
@@ -355,15 +359,8 @@ app.post('/api/session/:id/form-buysell-pairs', (req, res) => {
   if (!s) return res.status(404).json({ error: 'Session not found' });
   if (s.phase !== 'phase_3_buysell') return res.status(400).json({ error: 'Not in phase 3' });
 
+  // Roles already assigned at join time
   const active = s.participants.filter(p => p.status === 'active');
-  if (!active.some(p => p.role)) {
-    s.roleCounter = 0;
-    for (const p of active) {
-      p.role = s.roleCounter % 2 === 0 ? 'lucia' : 'marco';
-      s.roleCounter++;
-    }
-  }
-
   const lucias = active.filter(p => p.role === 'lucia');
   const marcos = active.filter(p => p.role === 'marco');
 
@@ -385,6 +382,8 @@ app.post('/api/session/:id/form-buysell-pairs', (req, res) => {
       finalPrice: null,
       timedAuctionLockedPrice: null,
       timedAuctionLockedBy: null,
+      timedAuctionReady: {},
+      timedAuctionStartTime: null,
     });
   }
 
@@ -441,6 +440,38 @@ app.post('/api/session/:id/buysell/:pairId/respond', (req, res) => {
 
   io.to(s.id).emit('buysell_complete', { pairId: pair.pairId, remedy, choice, finalPrice: pair.finalPrice });
   res.json({ ok: true, remedy });
+});
+
+// PHASE 3: Timed auction ready signal (both must click Begin)
+app.post('/api/session/:id/buysell/:pairId/timed-ready', (req, res) => {
+  const s = sessions.get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Session not found' });
+
+  const pair = s.buysellPairs.find(p => p.pairId === req.params.pairId);
+  if (!pair) return res.status(404).json({ error: 'Pair not found' });
+
+  const { participantId } = req.body;
+  if (!pair.timedAuctionReady) pair.timedAuctionReady = {};
+  pair.timedAuctionReady[participantId] = true;
+
+  // Notify partner that this person is ready
+  io.to(s.id).emit('timed_auction_partner_ready', { pairId: pair.pairId, participantId });
+
+  // Check if both are ready
+  const readyA = pair.timedAuctionReady[pair.partnerA.id];
+  const readyB = pair.timedAuctionReady[pair.partnerB.id];
+
+  if (readyA && readyB) {
+    pair.timedAuctionStartTime = Date.now();
+    io.to(s.id).emit('timed_auction_start', {
+      pairId: pair.pairId,
+      startTime: pair.timedAuctionStartTime,
+      startPrice: s.config.timedAuctionStartPrice,
+      dropPerSecond: s.config.timedAuctionDropPerSecond,
+    });
+  }
+
+  res.json({ ok: true, bothReady: !!(readyA && readyB) });
 });
 
 // PHASE 3: Timed auction lock
@@ -534,21 +565,19 @@ app.post('/api/session/:id/advance-phase', (req, res) => {
       }
     }
 
-    // Assign roles: shuffle active participants, then alternate lucia/marco
+    // Roles already assigned at join time — just form pairs
     const active = s.participants.filter(p => p.status === 'active');
-    for (let i = active.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [active[i], active[j]] = [active[j], active[i]];
-    }
-    s.roleCounter = 0;
-    for (const p of active) {
-      p.role = s.roleCounter % 2 === 0 ? 'lucia' : 'marco';
-      s.roleCounter++;
-    }
-
-    // Form buy-sell pairs
+    // Shuffle within each role to randomize pairings
     const lucias = active.filter(p => p.role === 'lucia');
     const marcos = active.filter(p => p.role === 'marco');
+    for (let i = lucias.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [lucias[i], lucias[j]] = [lucias[j], lucias[i]];
+    }
+    for (let i = marcos.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [marcos[i], marcos[j]] = [marcos[j], marcos[i]];
+    }
 
     const pairCount = Math.min(lucias.length, marcos.length);
     s.buysellPairs = [];
@@ -568,6 +597,8 @@ app.post('/api/session/:id/advance-phase', (req, res) => {
         finalPrice: null,
         timedAuctionLockedPrice: null,
         timedAuctionLockedBy: null,
+        timedAuctionReady: {},
+        timedAuctionStartTime: null,
       });
     }
   }
@@ -582,7 +613,7 @@ app.get('/api/session/:id/analytics', (req, res) => {
   const s = sessions.get(req.params.id);
   if (!s) return res.status(404).json({ error: 'Session not found' });
 
-  const phase1Counts = tallyVotes(s.phase1Votes, ['oppression', 'dissolution', 'partnership']);
+  const phase1Counts = tallyVotes(s.phase1Votes, ['oppression', 'dissolution']);
   const phase2Counts = tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation'], 'remedy');
 
   // Build pair outcomes with mechanism data

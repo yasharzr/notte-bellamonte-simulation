@@ -9,9 +9,9 @@ let currentPhase = 'lobby';
 let characterData = null;
 let p3Stage = null; // tracks which Phase 3 stage we're on
 let timedAuctionInterval;
-let currentPrice = 3000000;
-const STARTING_PRICE = 3000000;
-const DROP_PER_SECOND = 50000;
+let currentPrice = 5000000;
+const STARTING_PRICE = 5000000;
+const DROP_PER_SECOND = 25000;
 
 // Initialize on page load
 window.addEventListener('DOMContentLoaded', () => {
@@ -71,6 +71,19 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  socket.on('timed_auction_partner_ready', (data) => {
+    if (currentPair && currentPair.pairId === data.pairId && data.participantId !== participantId) {
+      const el = document.getElementById('timedPartnerStatus');
+      if (el) el.textContent = 'Your partner is ready!';
+    }
+  });
+
+  socket.on('timed_auction_start', (data) => {
+    if (currentPair && currentPair.pairId === data.pairId) {
+      startTimedAuctionClock(data.startTime, data.startPrice, data.dropPerSecond);
+    }
+  });
+
   socket.on('buysell_complete', (data) => {
     if (currentPair && currentPair.pairId === data.pairId) {
       currentPair.status = 'complete';
@@ -114,11 +127,13 @@ function joinSession() {
         sessionId = data.sessionId;
         participantId = data.participantId;
         userName = nameInput;
-        userRole = null;
+        userRole = data.role || null;
 
         sessionStorage.setItem('nb_sessionId', sessionId);
         sessionStorage.setItem('nb_participantId', participantId);
         sessionStorage.setItem('nb_userName', userName);
+
+        if (userRole) showRoleBadge();
 
         socket.emit('join_session', { sessionId, role: 'student' });
 
@@ -227,15 +242,6 @@ function renderPhase(sessionData) {
   } else if (currentPhase === 'phase_3_buysell') {
     document.getElementById('phase3Container').classList.remove('hidden');
 
-    // Discover role
-    if (!userRole && sessionData.participants) {
-      const me = sessionData.participants.find(p => p.id === participantId);
-      if (me && me.role) {
-        userRole = me.role;
-        showRoleBadge();
-      }
-    }
-
     // Find my pair
     currentPair = sessionData.buysellPairs.find(
       p => p.partnerA.id === participantId || p.partnerB.id === participantId
@@ -329,12 +335,11 @@ function updatePhase1VoteCount(data) {
 }
 
 function displayPhase1Results(results) {
-  const { oppression, dissolution, partnership } = results;
+  const { oppression, dissolution } = results;
   document.getElementById('phase1ResultDisplay').innerHTML = `
     <h3>Phase 1 Results</h3>
     <div class="result-item"><span>Oppression (s.241)</span><strong>${oppression} votes</strong></div>
     <div class="result-item"><span>Dissolution (s.214)</span><strong>${dissolution} votes</strong></div>
-    <div class="result-item"><span>Partnership Analogy</span><strong>${partnership} votes</strong></div>
   `;
 }
 
@@ -737,21 +742,70 @@ function showTimedAuctionNegotiation(container, isPartnerA, partner) {
     return;
   }
 
-  currentPrice = STARTING_PRICE;
+  // Check if auction already started (reconnect case) by checking if startTime exists
+  if (currentPair.timedAuctionStartTime) {
+    // Auction already running — join in progress
+    startTimedAuctionClock(currentPair.timedAuctionStartTime, STARTING_PRICE, DROP_PER_SECOND);
+    return;
+  }
 
+  // Show "Begin" button — both must click before clock starts
   container.innerHTML = `
     <div class="card" style="text-align:center;">
       <h3 style="color:#d4af37; margin-bottom:8px;">Timed Auction</h3>
-      <p style="color:#aaa; margin-bottom:6px; font-size:14px;">Price drops $50,000 every second</p>
+      <p style="color:#aaa; margin-bottom:6px; font-size:14px;">Price starts at $${STARTING_PRICE.toLocaleString()} and drops $${DROP_PER_SECOND.toLocaleString()} every second</p>
       <p style="color:#888; margin-bottom:20px; font-size:13px;">First to lock sets the price. The other chooses BUY or SELL.</p>
-      <div class="big-price dropping" id="timedPriceDisplay">$${STARTING_PRICE.toLocaleString()}</div>
+      <div class="big-price" id="timedPriceDisplay">$${STARTING_PRICE.toLocaleString()}</div>
+      <button class="lock-btn" id="timedBeginBtn" onclick="signalTimedReady()">Click to Begin</button>
+      <div id="timedPartnerStatus" style="text-align:center; color:#aaa; font-size:14px; margin-top:10px;">
+        Both partners must click Begin to start the clock.
+      </div>
+      <div id="timedReadyMsg" class="status-message hidden" style="text-align:center; margin-top:10px;">
+        You're ready! Waiting for your partner to click Begin...
+      </div>
+    </div>
+  `;
+}
+
+function signalTimedReady() {
+  // Disable the begin button
+  const btn = document.getElementById('timedBeginBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Waiting for partner...';
+    btn.style.opacity = '0.5';
+  }
+  document.getElementById('timedReadyMsg').classList.remove('hidden');
+
+  fetch(`/api/session/${sessionId}/buysell/${currentPair.pairId}/timed-ready`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ participantId }),
+  }).catch(err => console.error('Timed ready error:', err));
+}
+
+function startTimedAuctionClock(startTime, startPrice, dropPerSecond) {
+  clearInterval(timedAuctionInterval);
+
+  const container = document.getElementById('p3Negotiation');
+
+  // Calculate current price based on elapsed time
+  const elapsed = (Date.now() - startTime) / 1000;
+  currentPrice = Math.max(0, startPrice - Math.floor(elapsed) * dropPerSecond);
+
+  container.innerHTML = `
+    <div class="card" style="text-align:center;">
+      <h3 style="color:#d4af37; margin-bottom:8px;">Timed Auction — LIVE</h3>
+      <p style="color:#f87171; margin-bottom:6px; font-size:14px; font-weight:700;">Price is dropping!</p>
+      <p style="color:#888; margin-bottom:20px; font-size:13px;">First to lock sets the price. The other chooses BUY or SELL.</p>
+      <div class="big-price dropping" id="timedPriceDisplay">$${currentPrice.toLocaleString()}</div>
       <button class="lock-btn" id="timedLockBtn" onclick="lockTimedPrice()">Lock This Price</button>
     </div>
   `;
 
   timedAuctionInterval = setInterval(() => {
-    currentPrice -= DROP_PER_SECOND;
-    if (currentPrice < 0) currentPrice = 0;
+    const elapsedNow = (Date.now() - startTime) / 1000;
+    currentPrice = Math.max(0, startPrice - Math.floor(elapsedNow) * dropPerSecond);
     const el = document.getElementById('timedPriceDisplay');
     if (el) el.textContent = '$' + currentPrice.toLocaleString();
 
@@ -760,7 +814,7 @@ function showTimedAuctionNegotiation(container, isPartnerA, partner) {
       const btn = document.getElementById('timedLockBtn');
       if (btn) btn.disabled = true;
     }
-  }, 1000);
+  }, 200); // Update 5x/second for smooth display
 }
 
 function lockTimedPrice() {
@@ -868,6 +922,7 @@ function showOutcome(data) {
       </div>
       <div style="margin-top:20px; padding:15px; background:rgba(0,0,0,0.3); border-radius:8px;">
         <p style="font-size:13px; color:#888;">Transaction Complete</p>
+        <a href="/analytics.html?session=${sessionId}" target="_blank" style="display:inline-block; margin-top:12px; padding:10px 20px; background:#d4af37; color:#000; border-radius:6px; text-decoration:none; font-size:13px; font-weight:600;">View Class Analytics &amp; Debrief</a>
       </div>
     </div>
   `;

@@ -84,11 +84,15 @@ function renderDashboard() {
   document.getElementById('participantCount').textContent = sessionData.participants.length;
   document.getElementById('phaseDisplay').textContent = currentPhase.toUpperCase();
 
-  // Role counts (only visible in Phase 3+)
+  // Show analytics button
+  const analyticsBtn = document.getElementById('analyticsBtn');
+  if (analyticsBtn) analyticsBtn.style.display = 'inline-block';
+
+  // Role counts (visible from lobby onwards since roles assigned at join)
   const lucias = sessionData.lucias || 0;
   const marcos = sessionData.marcos || 0;
   const roleItem = document.getElementById('roleCountItem');
-  if (currentPhase === 'phase_3_buysell' || currentPhase === 'complete') {
+  if (sessionData.participants && sessionData.participants.length > 0) {
     roleItem.classList.remove('hidden');
     document.getElementById('roleCountDisplay').textContent = lucias + ' / ' + marcos;
   } else {
@@ -169,14 +173,13 @@ function renderParticipantList() {
 // ─── PHASE 1 RENDERING ────────────────────────────────────────────
 
 function renderPhase1() {
-  const phase1Data = sessionData.phase1Results || { oppression: 0, dissolution: 0, partnership: 0, revealed: false };
+  const phase1Data = sessionData.phase1Results || { oppression: 0, dissolution: 0, revealed: false };
 
   // Update vote counts
   document.getElementById('phase1VoteCount').textContent = `${sessionData.phase1Votes.length} / ${sessionData.participants.length}`;
 
   document.getElementById('oppression-count').textContent = phase1Data.oppression;
   document.getElementById('dissolution-count').textContent = phase1Data.dissolution;
-  document.getElementById('partnership-count').textContent = phase1Data.partnership;
 
   if (phase1Data.revealed) {
     document.getElementById('phase1VotingInProgress').classList.add('hidden');
@@ -214,7 +217,6 @@ function updatePhase1Display(data) {
   document.getElementById('phase1VoteCount').textContent = `${data.votesSubmitted} / ${data.votesExpected}`;
   document.getElementById('oppression-count').textContent = data.counts.oppression;
   document.getElementById('dissolution-count').textContent = data.counts.dissolution;
-  document.getElementById('partnership-count').textContent = data.counts.partnership;
 }
 
 // ─── PHASE 2 RENDERING ────────────────────────────────────────────
@@ -399,6 +401,12 @@ function advancePhase() {
     .catch(err => {
       alert('Error advancing phase: ' + err.message);
     });
+}
+
+function openAnalytics() {
+  if (sessionId) {
+    window.open(`/analytics.html?session=${sessionId}`, '_blank');
+  }
 }
 
 // Auto-reload dashboard every 1 second (to see participant count updates)

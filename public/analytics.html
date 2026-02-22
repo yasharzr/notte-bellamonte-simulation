@@ -232,7 +232,7 @@
       const entries = Object.entries(counts);
       entries.sort((a, b) => b[1] - a[1]);
       if (entries[0][1] === 0) return '--';
-      const labels = { oppression: 'Oppression', dissolution: 'Dissolution', partnership: 'Partnership' };
+      const labels = { oppression: 'Oppression', dissolution: 'Dissolution' };
       return labels[entries[0][0]] || entries[0][0];
     }
 
@@ -243,9 +243,9 @@
 
     // ─── PHASE 1 ─────────────────────────────────────
     function renderPhase1(p1) {
-      const labels = ['Oppression (s.241)', 'Dissolution (s.214)', 'Partnership Analogy'];
-      const values = [p1.counts.oppression, p1.counts.dissolution, p1.counts.partnership];
-      const colors = ['#d4af37', '#f87171', '#60a5fa'];
+      const labels = ['Oppression (s.241)', 'Dissolution (s.214)'];
+      const values = [p1.counts.oppression, p1.counts.dissolution];
+      const colors = ['#d4af37', '#f87171'];
 
       new Chart(document.getElementById('phase1Pie'), {
         type: 'doughnut',
@@ -255,13 +255,13 @@
 
       new Chart(document.getElementById('phase1Bar'), {
         type: 'bar',
-        data: { labels: ['Oppression', 'Dissolution', 'Partnership'], datasets: [{ data: values, backgroundColor: colors, borderRadius: 4 }] },
+        data: { labels: ['Oppression', 'Dissolution'], datasets: [{ data: values, backgroundColor: colors, borderRadius: 4 }] },
         options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#aaa', stepSize: 1 }, grid: { color: '#333' } }, x: { ticks: { color: '#aaa' }, grid: { display: false } } }, responsive: true }
       });
 
       if (p1.votes.length > 0) {
-        const choiceLabels = { oppression: 'Oppression', dissolution: 'Dissolution', partnership: 'Partnership' };
-        const choiceColors = { oppression: '#d4af37', dissolution: '#f87171', partnership: '#60a5fa' };
+        const choiceLabels = { oppression: 'Oppression', dissolution: 'Dissolution' };
+        const choiceColors = { oppression: '#d4af37', dissolution: '#f87171' };
         document.getElementById('phase1VoteList').innerHTML =
           '<h3 style="color:#aaa; font-size:13px; margin-bottom:10px;">Individual Votes</h3>' +
           '<div style="display:flex; flex-wrap:wrap; gap:6px;">' +
@@ -507,6 +507,26 @@
         prompts.push(`<strong>${ms.disagreedCount}</strong> pair(s) disagreed on mechanism and were randomly assigned. Did the randomly assigned mechanism lead to different outcomes?`);
       }
 
+      // Debrief discussion questions
+      prompts.push('<strong style="color:#60a5fa;">Debrief Question:</strong> Both sides received secret price constraints. Did having private information help you negotiate more effectively, or did it create a false sense of certainty about your position?');
+
+      prompts.push('<strong style="color:#60a5fa;">Debrief Question:</strong> In the shotgun clause, the offeror sets a price that the responder can either buy or sell at. Does this mechanism produce "fair" prices? Why might courts prefer this over other remedies?');
+
+      if (prices.length > 0) {
+        const avg = p3.priceStats.avg;
+        if (avg < 4250000) {
+          prompts.push('<strong style="color:#60a5fa;">Key Insight:</strong> The average price fell below Marco\'s buy ceiling ($4.25M). This suggests Lucias may have been under more pressure than expected. Was Marco\'s dissolution threat effective as leverage even though it was a bluff?');
+        } else if (avg > 4900000) {
+          prompts.push('<strong style="color:#60a5fa;">Key Insight:</strong> The average price exceeded Lucia\'s sell floor ($4.9M). Marcos may have overpaid. Did Lucia\'s oppression claim create more leverage than expected?');
+        } else {
+          prompts.push('<strong style="color:#60a5fa;">Key Insight:</strong> The average price landed in the zone between Marco\'s ceiling and Lucia\'s floor — a range where neither side\'s secret constraint was fully met. This mirrors real corporate disputes where both sides must compromise.');
+        }
+      }
+
+      prompts.push('<strong style="color:#60a5fa;">Debrief Question:</strong> If you were the court, which remedy (oppression vs dissolution) would you have granted? How does the remedy choice affect the balance of power between shareholders?');
+
+      prompts.push('<strong style="color:#60a5fa;">Debrief Question:</strong> In a real case, would the absence of a shareholder agreement make this dispute more or less predictable? What provisions should Lucia and Marco have included when they first became co-owners?');
+
       const el = document.getElementById('discussionPrompts');
       el.innerHTML = prompts.map(p => `<div class="insight-box">${p}</div>`).join('');
     }
@@ -526,7 +546,7 @@
         nameMap[v.name].phase2 = v.remedy;
       });
 
-      const choiceLabels = { oppression: 'Oppression', dissolution: 'Dissolution', partnership: 'Partnership' };
+      const choiceLabels = { oppression: 'Oppression', dissolution: 'Dissolution' };
       const remedyLabels = { buyout: 'Buyout', shotgun: 'Shotgun', timedauction: 'Timed Auction', liquidation: 'Liquidation' };
 
       let html = '<table class="pair-table"><thead><tr><th>Student</th><th>Phase 1 Vote</th><th>Phase 2 Vote</th></tr></thead><tbody>';
@@ -536,7 +556,7 @@
       html += '</tbody></table>';
 
       const correlations = {};
-      ['oppression', 'dissolution', 'partnership'].forEach(p1 => {
+      ['oppression', 'dissolution'].forEach(p1 => {
         correlations[p1] = { buyout: 0, shotgun: 0, timedauction: 0, liquidation: 0 };
       });
       Object.values(nameMap).forEach(v => {
@@ -548,7 +568,7 @@
       html += '<h3 style="color:#d4af37; margin-top:25px; margin-bottom:12px;">Voting Correlation</h3>';
       html += '<p style="color:#aaa; font-size:13px; margin-bottom:12px;">How did students who voted for each legal framework choose their remedy?</p>';
 
-      ['oppression', 'dissolution', 'partnership'].forEach(p1 => {
+      ['oppression', 'dissolution'].forEach(p1 => {
         const c = correlations[p1];
         const total = Object.values(c).reduce((a, b) => a + b, 0);
         if (total === 0) return;
