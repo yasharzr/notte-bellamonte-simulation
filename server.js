@@ -113,8 +113,8 @@ function tallyVotes(voteMap, choices, field = 'choice') {
 }
 
 function getWinningRemedy(phase2Results) {
-  const { buyout, shotgun, timedauction, liquidation } = phase2Results;
-  const votes = { buyout, shotgun, timedauction, liquidation };
+  const { dissolution, shotgun, openmarket } = phase2Results;
+  const votes = { dissolution, shotgun, openmarket };
   const max = Math.max(...Object.values(votes));
   for (const [remedy, count] of Object.entries(votes)) {
     if (count === max) return remedy;
@@ -369,10 +369,10 @@ app.post('/api/session/:id/form-buysell-pairs', (req, res) => {
       pairId,
       partnerA: { id: lucias[i].id, name: lucias[i].name, role: 'Lucia' },
       partnerB: { id: marcos[i].id, name: marcos[i].name, role: 'Marco' },
-      status: 'choosing_mechanism',
+      status: 'waiting_for_offer',
       mechanismVotes: {},
-      chosenMechanism: null,
-      mechanismAgreed: null,
+      chosenMechanism: 'shotgun',
+      mechanismAgreed: true,
       shotgunOffer: null,
       shotgunOfferorId: null,
       shotgunChoice: null,
