@@ -88,7 +88,7 @@ function mkSession(config) {
 
     // Phase 2: Remedy Selection Voting
     phase2Votes: new Map(),
-    phase2Results: { buyout: 0, shotgun: 0, timedauction: 0, liquidation: 0, revealed: false, winningRemedy: null },
+    phase2Results: { dissolution: 0, shotgun: 0, openmarket: 0, revealed: false, winningRemedy: null },
 
     // Phase 3: Buy-Sell Execution
     buysellPairs: [],
@@ -266,7 +266,7 @@ app.post('/api/session/:id/vote-phase2', (req, res) => {
   if (s.phase !== 'phase_2_remedy') return res.status(400).json({ error: 'Not in phase 2' });
 
   const { participantId, remedy } = req.body;
-  if (!['buyout', 'shotgun', 'timedauction', 'liquidation'].includes(remedy)) {
+  if (!['dissolution', 'shotgun', 'openmarket'].includes(remedy)) {
     return res.status(400).json({ error: 'Invalid remedy' });
   }
 
@@ -278,7 +278,7 @@ app.post('/api/session/:id/vote-phase2', (req, res) => {
   io.to('instructor-' + s.id).emit('phase2_vote_update', {
     votesSubmitted: s.phase2Votes.size,
     votesExpected: s.participants.length,
-    counts: tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation'], 'remedy'),
+    counts: tallyVotes(s.phase2Votes, ['dissolution', 'shotgun', 'openmarket'], 'remedy'),
   });
 
   res.json({ ok: true });
@@ -289,7 +289,7 @@ app.post('/api/session/:id/reveal-phase2', (req, res) => {
   const s = sessions.get(req.params.id);
   if (!s) return res.status(404).json({ error: 'Session not found' });
 
-  const counts = tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation'], 'remedy');
+  const counts = tallyVotes(s.phase2Votes, ['dissolution', 'shotgun', 'openmarket'], 'remedy');
   const winningRemedy = getWinningRemedy(counts);
 
   s.phase2Results = {
@@ -299,11 +299,8 @@ app.post('/api/session/:id/reveal-phase2', (req, res) => {
     allVotes: Array.from(s.phase2Votes.values()).map(v => ({ name: v.name, remedy: v.remedy })),
   };
 
-  if (['shotgun', 'timedauction'].includes(winningRemedy)) {
-    s.buysellMode = winningRemedy;
-  } else {
-    s.buysellMode = 'shotgun';
-  }
+  // For now, all pairs use shotgun mechanism regardless of vote
+  s.buysellMode = 'shotgun';
 
   io.to(s.id).emit('phase2_revealed', s.phase2Results);
   res.json(s.phase2Results);
@@ -550,7 +547,7 @@ app.post('/api/session/:id/advance-phase', (req, res) => {
   } else if (nextPhase === 'phase_3_buysell') {
     // Reveal phase 2 results if not already revealed
     if (!s.phase2Results.revealed) {
-      const counts = tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation'], 'remedy');
+      const counts = tallyVotes(s.phase2Votes, ['dissolution', 'shotgun', 'openmarket'], 'remedy');
       const winningRemedy = getWinningRemedy(counts);
       s.phase2Results = {
         ...counts,
@@ -558,11 +555,8 @@ app.post('/api/session/:id/advance-phase', (req, res) => {
         winningRemedy,
         allVotes: Array.from(s.phase2Votes.values()).map(v => ({ name: v.name, remedy: v.remedy })),
       };
-      if (['shotgun', 'timedauction'].includes(winningRemedy)) {
-        s.buysellMode = winningRemedy;
-      } else {
-        s.buysellMode = 'shotgun';
-      }
+      // For now, all pairs use shotgun mechanism regardless of vote
+      s.buysellMode = 'shotgun';
     }
 
     // Roles already assigned at join time — just form pairs
@@ -587,10 +581,10 @@ app.post('/api/session/:id/advance-phase', (req, res) => {
         pairId,
         partnerA: { id: lucias[i].id, name: lucias[i].name, role: 'Lucia' },
         partnerB: { id: marcos[i].id, name: marcos[i].name, role: 'Marco' },
-        status: 'choosing_mechanism',
+        status: 'waiting_for_offer',
         mechanismVotes: {},
-        chosenMechanism: null,
-        mechanismAgreed: null,
+        chosenMechanism: 'shotgun',
+        mechanismAgreed: true,
         shotgunOffer: null,
         shotgunOfferorId: null,
         shotgunChoice: null,
@@ -614,7 +608,7 @@ app.get('/api/session/:id/analytics', (req, res) => {
   if (!s) return res.status(404).json({ error: 'Session not found' });
 
   const phase1Counts = tallyVotes(s.phase1Votes, ['oppression', 'dissolution']);
-  const phase2Counts = tallyVotes(s.phase2Votes, ['buyout', 'shotgun', 'timedauction', 'liquidation'], 'remedy');
+  const phase2Counts = tallyVotes(s.phase2Votes, ['dissolution', 'shotgun', 'openmarket'], 'remedy');
 
   // Build pair outcomes with mechanism data
   const pairOutcomes = s.buysellPairs.map(p => {

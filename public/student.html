@@ -319,8 +319,8 @@
           <div class="scenario-intro">
             <h2>The Scenario</h2>
             <p>Lucia and Marco are 50/50 co-owners of <strong>Notte Bellamonte Winery</strong>, a family vineyard in the Okanagan Valley, BC. They have no shareholder agreement, no shotgun clause, and no dispute resolution mechanism.</p>
-            <p style="margin-top: 12px;">The winery was founded by their father, Enzo Bellamonte, and has been in the family for two generations. Both siblings inherited equal shares after Enzo's passing.</p>
-            <p style="margin-top: 12px;"><strong>Lucia</strong> wants to preserve the family legacy. She believes in maintaining the boutique quality, the family brand, and the artisanal winemaking tradition that Enzo built.</p>
+            <p style="margin-top: 12px;">The winery was founded by their father, Alessandro Bellamonte, and has been in the family for two generations. Both siblings inherited equal shares after Alessandro's passing.</p>
+            <p style="margin-top: 12px;"><strong>Lucia</strong> wants to preserve the family legacy. She believes in maintaining the boutique quality, the family brand, and the artisanal winemaking tradition that Alessandro built.</p>
             <p style="margin-top: 12px;"><strong>Marco</strong> wants to modernize the winery. He envisions automating production, scaling internationally, and potentially taking the company public or bringing in outside investors.</p>
             <p style="margin-top: 12px;">They are deadlocked. Nothing gets decided. Dividends don't get declared. The company stalls.</p>
             <p style="margin-top: 12px;"><strong>A court remedy is sought. The question: What legal doctrine applies?</strong></p>
@@ -367,21 +367,17 @@
           <h3 style="margin-bottom: 15px;">Phase 2: What remedy should the court impose?</h3>
 
           <div class="vote-buttons">
-            <button class="vote-btn" onclick="votePhase2('buyout')">
-              <span class="label">Buyout</span>
-              <span class="sublabel">One party buys out the other at fair market value</span>
+            <button class="vote-btn" onclick="votePhase2('dissolution')">
+              <span class="label">Equitable Dissolution</span>
+              <span class="sublabel">Wind up the company, sell assets, and distribute proceeds when the relationship is irreparably broken</span>
             </button>
             <button class="vote-btn" onclick="votePhase2('shotgun')">
-              <span class="label">Shotgun Mechanism</span>
-              <span class="sublabel">One names a price; the other chooses to buy or sell</span>
+              <span class="label">Shotgun Sale</span>
+              <span class="sublabel">One side names a price; the other must buy or sell at that price — forcing fair offers</span>
             </button>
-            <button class="vote-btn" onclick="votePhase2('timedauction')">
-              <span class="label">Timed Auction</span>
-              <span class="sublabel">Price drops every second; first to lock in wins</span>
-            </button>
-            <button class="vote-btn" onclick="votePhase2('liquidation')">
-              <span class="label">Liquidation</span>
-              <span class="sublabel">Company is wound up; assets sold; proceeds distributed</span>
+            <button class="vote-btn" onclick="votePhase2('openmarket')">
+              <span class="label">Open Market Sale</span>
+              <span class="sublabel">Sell the business to an outside third party so the market determines fair value</span>
             </button>
           </div>
 

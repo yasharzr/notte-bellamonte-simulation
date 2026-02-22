@@ -222,22 +222,20 @@ function updatePhase1Display(data) {
 // ─── PHASE 2 RENDERING ────────────────────────────────────────────
 
 function renderPhase2() {
-  const phase2Data = sessionData.phase2Results || { buyout: 0, shotgun: 0, timedauction: 0, liquidation: 0, revealed: false };
+  const phase2Data = sessionData.phase2Results || { dissolution: 0, shotgun: 0, openmarket: 0, revealed: false };
 
   document.getElementById('phase2VoteCount').textContent = `${sessionData.phase2Votes.length} / ${sessionData.participants.length}`;
 
-  document.getElementById('buyout-count').textContent = phase2Data.buyout;
+  document.getElementById('dissolution2-count').textContent = phase2Data.dissolution;
   document.getElementById('shotgun-count').textContent = phase2Data.shotgun;
-  document.getElementById('timedauction-count').textContent = phase2Data.timedauction;
-  document.getElementById('liquidation-count').textContent = phase2Data.liquidation;
+  document.getElementById('openmarket-count').textContent = phase2Data.openmarket;
 
   if (phase2Data.winningRemedy) {
     document.getElementById('phase2Winner').classList.remove('hidden');
     const remedyLabels = {
-      buyout: 'Buyout',
-      shotgun: 'Shotgun Mechanism',
-      timedauction: 'Timed Auction',
-      liquidation: 'Liquidation',
+      dissolution: 'Equitable Dissolution',
+      shotgun: 'Shotgun Sale',
+      openmarket: 'Open Market Sale',
     };
     document.getElementById('winnerDisplay').textContent = remedyLabels[phase2Data.winningRemedy] || phase2Data.winningRemedy;
   }
@@ -255,10 +253,9 @@ function renderPhase2() {
 function renderPhase2Details(votes) {
   const tbody = document.getElementById('phase2VoteDetails');
   const labels = {
-    buyout: 'Buyout',
-    shotgun: 'Shotgun',
-    timedauction: 'Timed Auction',
-    liquidation: 'Liquidation',
+    dissolution: 'Equitable Dissolution',
+    shotgun: 'Shotgun Sale',
+    openmarket: 'Open Market Sale',
   };
   tbody.innerHTML = votes.map(v => `
     <tr>
@@ -282,10 +279,9 @@ function revealPhase2() {
 
 function updatePhase2Display(data) {
   document.getElementById('phase2VoteCount').textContent = `${data.votesSubmitted} / ${data.votesExpected}`;
-  document.getElementById('buyout-count').textContent = data.counts.buyout;
+  document.getElementById('dissolution2-count').textContent = data.counts.dissolution;
   document.getElementById('shotgun-count').textContent = data.counts.shotgun;
-  document.getElementById('timedauction-count').textContent = data.counts.timedauction;
-  document.getElementById('liquidation-count').textContent = data.counts.liquidation;
+  document.getElementById('openmarket-count').textContent = data.counts.openmarket;
 }
 
 // ─── PHASE 3 RENDERING ────────────────────────────────────────────
@@ -304,18 +300,14 @@ function renderPhase3() {
   container.innerHTML = pairs.map(p => {
     let statusLabel;
     if (p.status === 'complete') statusLabel = '✓ Complete';
-    else if (p.status === 'choosing_mechanism') statusLabel = 'Choosing Mechanism';
+    else if (p.status === 'waiting_for_offer') statusLabel = 'Waiting for Offer';
+    else if (p.status === 'offered') statusLabel = 'Offer Made';
     else statusLabel = p.status.replace(/_/g, ' ').toUpperCase();
 
     const isComplete = p.status === 'complete';
 
     // Mechanism info
-    let mechInfo = '';
-    if (p.chosenMechanism) {
-      const mechLabel = p.chosenMechanism === 'shotgun' ? 'Shotgun' : 'Timed Auction';
-      const agreeLabel = p.mechanismAgreed ? '(agreed)' : '(random)';
-      mechInfo = `<div style="font-size:11px; color:#d4af37;">${mechLabel} ${agreeLabel}</div>`;
-    }
+    let mechInfo = '<div style="font-size:11px; color:#d4af37;">Shotgun</div>';
 
     const priceInfo = p.finalPrice ? `$${p.finalPrice.toLocaleString()}` : (p.shotgunOffer ? `Offer: $${p.shotgunOffer.toLocaleString()}` : '--');
     const choiceInfo = p.shotgunChoice ? (p.shotgunChoice === 'buy' ? 'BUY' : 'SELL') : '--';

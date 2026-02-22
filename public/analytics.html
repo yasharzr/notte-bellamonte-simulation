@@ -237,7 +237,7 @@
     }
 
     function formatRemedy(r) {
-      const map = { buyout: 'Buyout', shotgun: 'Shotgun', timedauction: 'Timed Auction', liquidation: 'Liquidation' };
+      const map = { dissolution: 'Dissolution', shotgun: 'Shotgun Sale', openmarket: 'Open Market Sale' };
       return map[r] || r;
     }
 
@@ -272,9 +272,9 @@
 
     // ─── PHASE 2 ─────────────────────────────────────
     function renderPhase2(p2) {
-      const labels = ['Buyout', 'Shotgun', 'Timed Auction', 'Liquidation'];
-      const values = [p2.counts.buyout, p2.counts.shotgun, p2.counts.timedauction, p2.counts.liquidation];
-      const colors = ['#4ade80', '#d4af37', '#60a5fa', '#f87171'];
+      const labels = ['Dissolution', 'Shotgun Sale', 'Open Market Sale'];
+      const values = [p2.counts.dissolution, p2.counts.shotgun, p2.counts.openmarket];
+      const colors = ['#f87171', '#d4af37', '#60a5fa'];
 
       new Chart(document.getElementById('phase2Pie'), {
         type: 'doughnut',
@@ -289,7 +289,7 @@
       });
 
       if (p2.votes.length > 0) {
-        const remedyColors = { buyout: '#4ade80', shotgun: '#d4af37', timedauction: '#60a5fa', liquidation: '#f87171' };
+        const remedyColors = { dissolution: '#f87171', shotgun: '#d4af37', openmarket: '#60a5fa' };
         document.getElementById('phase2VoteList').innerHTML =
           '<h3 style="color:#aaa; font-size:13px; margin-bottom:10px;">Individual Votes</h3>' +
           '<div style="display:flex; flex-wrap:wrap; gap:6px;">' +
@@ -300,6 +300,9 @@
 
     // ─── MECHANISM CHOICE ────────────────────────────
     function renderMechanismChoice(p3) {
+      // Mechanism choice disabled — everyone uses shotgun
+      document.getElementById('mechanismCard').classList.add('hidden');
+      return;
       const ms = p3.mechanismStats;
       if (!ms || (ms.shotgunCount === 0 && ms.timedAuctionCount === 0)) {
         document.getElementById('mechanismCard').classList.add('hidden');
@@ -547,7 +550,7 @@
       });
 
       const choiceLabels = { oppression: 'Oppression', dissolution: 'Dissolution' };
-      const remedyLabels = { buyout: 'Buyout', shotgun: 'Shotgun', timedauction: 'Timed Auction', liquidation: 'Liquidation' };
+      const remedyLabels = { dissolution: 'Dissolution', shotgun: 'Shotgun Sale', openmarket: 'Open Market Sale' };
 
       let html = '<table class="pair-table"><thead><tr><th>Student</th><th>Phase 1 Vote</th><th>Phase 2 Vote</th></tr></thead><tbody>';
       Object.entries(nameMap).forEach(([name, votes]) => {
@@ -557,7 +560,7 @@
 
       const correlations = {};
       ['oppression', 'dissolution'].forEach(p1 => {
-        correlations[p1] = { buyout: 0, shotgun: 0, timedauction: 0, liquidation: 0 };
+        correlations[p1] = { dissolution: 0, shotgun: 0, openmarket: 0 };
       });
       Object.values(nameMap).forEach(v => {
         if (v.phase1 && v.phase2 && correlations[v.phase1]) {

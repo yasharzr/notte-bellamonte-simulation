@@ -264,14 +264,12 @@ function renderPhase(sessionData) {
         });
       }
     } else if (p3Stage === 'negotiation' || currentPair.status === 'offered' || currentPair.status === 'waiting_for_offer' || currentPair.status === 'waiting_for_final_choice') {
-      if (currentPair.chosenMechanism && p3Stage !== 'negotiation') {
-        // Mechanism decided, jump to negotiation
+      if (p3Stage !== 'negotiation') {
+        // Jump to negotiation (shotgun only for now)
         hideAllP3Stages();
         p3Stage = 'negotiation';
         showNegotiation();
       }
-    } else if (p3Stage === 'mechanism') {
-      // Already showing mechanism choice
     } else if (p3Stage === 'brief') {
       // Already showing briefing
     } else if (p3Stage === 'reveal') {
@@ -281,16 +279,16 @@ function renderPhase(sessionData) {
       if (currentPair.status === 'complete') {
         hideAllP3Stages();
         showOutcome({ choice: currentPair.shotgunChoice, finalPrice: currentPair.finalPrice, remedy: '' });
-      } else if (currentPair.chosenMechanism && currentPair.status !== 'choosing_mechanism') {
-        // Mechanism already decided (reconnect case)
+      } else if (currentPair.status === 'offered' || currentPair.status === 'waiting_for_offer' || currentPair.status === 'waiting_for_final_choice') {
+        // Reconnect into active negotiation
         p3Stage = 'negotiation';
         hideAllP3Stages();
         showNegotiation();
       } else if (characterData) {
-        // Already fetched character data (reconnect case)
-        p3Stage = 'mechanism';
+        // Already fetched character data (reconnect case) — go to negotiation
+        p3Stage = 'negotiation';
         hideAllP3Stages();
-        showMechanismChoice();
+        showNegotiation();
       } else {
         // Start from role reveal
         showRoleReveal();
@@ -373,16 +371,16 @@ function updatePhase2VoteCount(data) {
 }
 
 function displayPhase2Results(results) {
-  const { buyout, shotgun, timedauction, liquidation, winningRemedy } = results;
+  const { dissolution, shotgun, openmarket, winningRemedy } = results;
+  const remedyLabels = { dissolution: 'Equitable Dissolution', shotgun: 'Shotgun Sale', openmarket: 'Open Market Sale' };
   document.getElementById('phase1ResultDisplay').innerHTML = `
     <h3>Phase 2 Results</h3>
-    <div class="result-item"><span>Buyout</span><strong>${buyout} votes</strong></div>
-    <div class="result-item"><span>Shotgun</span><strong>${shotgun} votes</strong></div>
-    <div class="result-item"><span>Timed Auction</span><strong>${timedauction} votes</strong></div>
-    <div class="result-item"><span>Liquidation</span><strong>${liquidation} votes</strong></div>
+    <div class="result-item"><span>Equitable Dissolution</span><strong>${dissolution || 0} votes</strong></div>
+    <div class="result-item"><span>Shotgun Sale</span><strong>${shotgun || 0} votes</strong></div>
+    <div class="result-item"><span>Open Market Sale</span><strong>${openmarket || 0} votes</strong></div>
     <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.2);">
       <p style="font-size:12px; color:#aaa;">Winning Remedy:</p>
-      <p style="font-size:16px; font-weight:bold; color:#d4af37;">${(winningRemedy || '').toUpperCase()}</p>
+      <p style="font-size:16px; font-weight:bold; color:#d4af37;">${remedyLabels[winningRemedy] || (winningRemedy || '').toUpperCase()}</p>
     </div>
   `;
 }
@@ -477,7 +475,7 @@ function renderCharacterBrief(container, role, char) {
       </div>
     </div>
 
-    <button class="button" onclick="goToMechanismChoice()" style="margin-top:20px;">I Understand My Position — Proceed</button>
+    <button class="button" onclick="goToNegotiation()" style="margin-top:20px;">I Understand My Position — Proceed</button>
   `;
 
   container.innerHTML = html;
