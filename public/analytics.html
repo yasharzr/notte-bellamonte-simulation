@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notte Bellamonte - Data Analysis</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -59,7 +60,18 @@
     .tag-buy { background: rgba(74,222,128,0.2); color: #4ade80; border: 1px solid #4ade80; }
     .tag-sell { background: rgba(248,113,113,0.2); color: #f87171; border: 1px solid #f87171; }
     .tag-pending { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid #fbbf24; }
+    .tag-shotgun { background: rgba(212,175,55,0.2); color: #d4af37; border: 1px solid #d4af37; }
+    .tag-timed { background: rgba(96,165,250,0.2); color: #60a5fa; border: 1px solid #60a5fa; }
+    .tag-agreed { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid #4ade80; }
+    .tag-random { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid #fbbf24; }
     .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .insight-box {
+      background: #3a3a4e; border-left: 4px solid #60a5fa; padding: 16px;
+      border-radius: 6px; margin-bottom: 12px; font-size: 14px; line-height: 1.6;
+    }
+    .insight-box strong { color: #d4af37; }
+    .range-line { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 13px; }
+    .range-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
     @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -88,12 +100,8 @@
       <div class="card">
         <h2>Phase 1: Legal Framework Vote Distribution</h2>
         <div class="grid-2">
-          <div class="chart-container">
-            <canvas id="phase1Pie"></canvas>
-          </div>
-          <div>
-            <canvas id="phase1Bar"></canvas>
-          </div>
+          <div class="chart-container"><canvas id="phase1Pie"></canvas></div>
+          <div><canvas id="phase1Bar"></canvas></div>
         </div>
         <div id="phase1VoteList" style="margin-top: 20px;"></div>
       </div>
@@ -102,35 +110,54 @@
       <div class="card">
         <h2>Phase 2: Remedy Selection Distribution</h2>
         <div class="grid-2">
-          <div class="chart-container">
-            <canvas id="phase2Pie"></canvas>
-          </div>
-          <div>
-            <canvas id="phase2Bar"></canvas>
-          </div>
+          <div class="chart-container"><canvas id="phase2Pie"></canvas></div>
+          <div><canvas id="phase2Bar"></canvas></div>
         </div>
         <div id="phase2VoteList" style="margin-top: 20px;"></div>
       </div>
 
-      <!-- PHASE 3 OUTCOMES -->
-      <div class="card" id="phase3Card">
-        <h2>Phase 3: Buy-Sell Outcomes</h2>
-        <div id="phase3Stats" class="summary-grid" style="margin-bottom: 20px;"></div>
+      <!-- PHASE 3: MECHANISM CHOICE -->
+      <div class="card" id="mechanismCard">
+        <h2>Phase 3: Mechanism Choice</h2>
+        <div id="mechanismStats" class="summary-grid"></div>
+        <div class="grid-2">
+          <div class="chart-container"><canvas id="mechanismPie"></canvas></div>
+          <div id="mechanismDetails"></div>
+        </div>
+      </div>
+
+      <!-- PHASE 3: PRICE ANALYSIS -->
+      <div class="card" id="priceCard">
+        <h2>Phase 3: Price Analysis</h2>
+        <div id="priceStats" class="summary-grid"></div>
+        <div style="margin-bottom:20px;">
+          <canvas id="priceChart" height="250"></canvas>
+        </div>
+        <div id="priceRange"></div>
+      </div>
+
+      <!-- PHASE 3: PAIR OUTCOMES -->
+      <div class="card" id="pairCard">
+        <h2>Phase 3: Pair Outcomes</h2>
         <table class="pair-table" id="pairTable">
           <thead>
             <tr>
-              <th>Lucia (Offeror)</th>
-              <th>Marco (Offeree)</th>
-              <th>Offer Price</th>
+              <th>Lucia</th>
+              <th>Marco</th>
+              <th>Mechanism</th>
+              <th>Price</th>
               <th>Decision</th>
-              <th>Final Price</th>
+              <th>Buyer</th>
             </tr>
           </thead>
           <tbody id="pairTableBody"></tbody>
         </table>
-        <div style="margin-top: 20px;">
-          <canvas id="priceChart"></canvas>
-        </div>
+      </div>
+
+      <!-- DISCUSSION PROMPTS -->
+      <div class="card" id="discussionCard">
+        <h2>Discussion Prompts</h2>
+        <div id="discussionPrompts"></div>
       </div>
 
       <!-- CROSS-ANALYSIS -->
@@ -166,7 +193,6 @@
       el.classList.remove('hidden');
     }
 
-    // Also check URL params
     const params = new URLSearchParams(window.location.search);
     const urlSession = params.get('session');
     if (urlSession) {
@@ -183,7 +209,10 @@
       renderSummary(data);
       renderPhase1(data.phase1);
       renderPhase2(data.phase2);
-      renderPhase3(data.phase3);
+      renderMechanismChoice(data.phase3);
+      renderPriceAnalysis(data.phase3);
+      renderPairOutcomes(data.phase3);
+      renderDiscussion(data.phase3);
       renderCrossAnalysis(data);
     }
 
@@ -221,26 +250,15 @@
       new Chart(document.getElementById('phase1Pie'), {
         type: 'doughnut',
         data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
-        options: {
-          plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 11 } } } },
-          responsive: true,
-        }
+        options: { plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 11 } } } }, responsive: true }
       });
 
       new Chart(document.getElementById('phase1Bar'), {
         type: 'bar',
         data: { labels: ['Oppression', 'Dissolution', 'Partnership'], datasets: [{ data: values, backgroundColor: colors, borderRadius: 4 }] },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, ticks: { color: '#aaa', stepSize: 1 }, grid: { color: '#333' } },
-            x: { ticks: { color: '#aaa' }, grid: { display: false } }
-          },
-          responsive: true,
-        }
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#aaa', stepSize: 1 }, grid: { color: '#333' } }, x: { ticks: { color: '#aaa' }, grid: { display: false } } }, responsive: true }
       });
 
-      // Vote list
       if (p1.votes.length > 0) {
         const choiceLabels = { oppression: 'Oppression', dissolution: 'Dissolution', partnership: 'Partnership' };
         const choiceColors = { oppression: '#d4af37', dissolution: '#f87171', partnership: '#60a5fa' };
@@ -261,23 +279,13 @@
       new Chart(document.getElementById('phase2Pie'), {
         type: 'doughnut',
         data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
-        options: {
-          plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 11 } } } },
-          responsive: true,
-        }
+        options: { plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 11 } } } }, responsive: true }
       });
 
       new Chart(document.getElementById('phase2Bar'), {
         type: 'bar',
         data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 4 }] },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, ticks: { color: '#aaa', stepSize: 1 }, grid: { color: '#333' } },
-            x: { ticks: { color: '#aaa' }, grid: { display: false } }
-          },
-          responsive: true,
-        }
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#aaa', stepSize: 1 }, grid: { color: '#333' } }, x: { ticks: { color: '#aaa' }, grid: { display: false } } }, responsive: true }
       });
 
       if (p2.votes.length > 0) {
@@ -290,62 +298,217 @@
       }
     }
 
-    // ─── PHASE 3 ─────────────────────────────────────
-    function renderPhase3(p3) {
-      if (p3.totalPairs === 0) {
-        document.getElementById('phase3Card').innerHTML += '<p style="color:#aaa; text-align:center;">No pairs formed yet.</p>';
+    // ─── MECHANISM CHOICE ────────────────────────────
+    function renderMechanismChoice(p3) {
+      const ms = p3.mechanismStats;
+      if (!ms || (ms.shotgunCount === 0 && ms.timedAuctionCount === 0)) {
+        document.getElementById('mechanismCard').classList.add('hidden');
         return;
       }
 
-      // Stats
-      const prices = p3.pairs.filter(p => p.finalPrice).map(p => p.finalPrice);
-      const avgPrice = prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
-      const buys = p3.pairs.filter(p => p.choice === 'buy').length;
-      const sells = p3.pairs.filter(p => p.choice === 'sell').length;
-
-      document.getElementById('phase3Stats').innerHTML = `
-        <div class="stat-box"><div class="label">Mode</div><div class="value" style="font-size:16px;">${p3.mode === 'shotgun' ? 'Shotgun' : 'Timed Auction'}</div></div>
-        <div class="stat-box"><div class="label">Avg Price</div><div class="value" style="font-size:16px;">$${avgPrice.toLocaleString()}</div></div>
-        <div class="stat-box"><div class="label">Buy / Sell</div><div class="value">${buys} / ${sells}</div></div>
+      document.getElementById('mechanismStats').innerHTML = `
+        <div class="stat-box"><div class="label">Shotgun Pairs</div><div class="value">${ms.shotgunCount}</div></div>
+        <div class="stat-box"><div class="label">Timed Auction Pairs</div><div class="value">${ms.timedAuctionCount}</div></div>
+        <div class="stat-box"><div class="label">Agreed</div><div class="value">${ms.agreedCount}</div></div>
+        <div class="stat-box"><div class="label">Random (Disagreed)</div><div class="value">${ms.disagreedCount}</div></div>
       `;
 
-      // Table
+      new Chart(document.getElementById('mechanismPie'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Shotgun', 'Timed Auction'],
+          datasets: [{ data: [ms.shotgunCount, ms.timedAuctionCount], backgroundColor: ['#d4af37', '#60a5fa'], borderWidth: 0 }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 11 } } } }, responsive: true }
+      });
+
+      // Per-pair mechanism details
+      let html = '<h3 style="color:#aaa; font-size:13px; margin-bottom:10px;">Per-Pair Breakdown</h3>';
+      p3.pairs.forEach((p, i) => {
+        const mechTag = p.chosenMechanism === 'shotgun'
+          ? '<span class="tag tag-shotgun">Shotgun</span>'
+          : '<span class="tag tag-timed">Timed Auction</span>';
+        const agreeTag = p.mechanismAgreed
+          ? '<span class="tag tag-agreed">Agreed</span>'
+          : '<span class="tag tag-random">Random</span>';
+        const voteA = p.mechanismVoteA ? (p.mechanismVoteA === 'shotgun' ? 'Shotgun' : 'Timed') : '?';
+        const voteB = p.mechanismVoteB ? (p.mechanismVoteB === 'shotgun' ? 'Shotgun' : 'Timed') : '?';
+        html += `<div style="padding:8px 0; border-bottom:1px solid #333; font-size:13px;">
+          <strong>Pair ${i+1}:</strong> ${p.partnerA} voted ${voteA}, ${p.partnerB} voted ${voteB} &rarr; ${mechTag} ${agreeTag}
+        </div>`;
+      });
+      document.getElementById('mechanismDetails').innerHTML = html;
+    }
+
+    // ─── PRICE ANALYSIS ──────────────────────────────
+    function renderPriceAnalysis(p3) {
+      const ps = p3.priceStats;
+      if (!ps || !ps.avg) {
+        document.getElementById('priceCard').classList.add('hidden');
+        return;
+      }
+
+      const luciaFloor = p3.luciaFloorSell || 4900000;
+      const luciaCeiling = p3.luciaCeilingBuy || 4350000;
+      const marcoFloor = p3.marcoFloorSell || 4250000;
+      const marcoCeiling = p3.marcoCeilingBuy || 4250000;
+
+      document.getElementById('priceStats').innerHTML = `
+        <div class="stat-box"><div class="label">Min Price</div><div class="value" style="font-size:18px;">$${ps.min.toLocaleString()}</div></div>
+        <div class="stat-box"><div class="label">Max Price</div><div class="value" style="font-size:18px;">$${ps.max.toLocaleString()}</div></div>
+        <div class="stat-box"><div class="label">Avg Price</div><div class="value" style="font-size:18px;">$${ps.avg.toLocaleString()}</div></div>
+        <div class="stat-box"><div class="label">Median</div><div class="value" style="font-size:18px;">$${ps.median.toLocaleString()}</div></div>
+      `;
+
+      // Price bar chart with reference lines
+      const completedPairs = p3.pairs.filter(p => p.finalPrice);
+      const pairLabels = completedPairs.map((p, i) => `Pair ${i + 1}`);
+      const prices = completedPairs.map(p => p.finalPrice);
+      const pairColors = completedPairs.map(p => p.chosenMechanism === 'shotgun' ? '#d4af37' : '#60a5fa');
+
+      new Chart(document.getElementById('priceChart'), {
+        type: 'bar',
+        data: {
+          labels: pairLabels,
+          datasets: [{ label: 'Final Price ($)', data: prices, backgroundColor: pairColors, borderRadius: 4 }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false },
+            annotation: {
+              annotations: {
+                luciaSell: {
+                  type: 'line', yMin: luciaFloor, yMax: luciaFloor,
+                  borderColor: '#d4af37', borderWidth: 2, borderDash: [6, 3],
+                  label: { display: true, content: 'Lucia Sell Min $4.9M', position: 'start', backgroundColor: 'rgba(212,175,55,0.8)', font: { size: 10 } }
+                },
+                marcoBuy: {
+                  type: 'line', yMin: marcoCeiling, yMax: marcoCeiling,
+                  borderColor: '#60a5fa', borderWidth: 2, borderDash: [6, 3],
+                  label: { display: true, content: 'Marco Buy Max $4.25M', position: 'end', backgroundColor: 'rgba(96,165,250,0.8)', font: { size: 10 } }
+                },
+                luciaBuy: {
+                  type: 'line', yMin: luciaCeiling, yMax: luciaCeiling,
+                  borderColor: '#d4af37', borderWidth: 1, borderDash: [3, 3],
+                  label: { display: true, content: 'Lucia Buy Max $4.35M', position: 'start', backgroundColor: 'rgba(212,175,55,0.5)', font: { size: 10 } }
+                },
+              }
+            }
+          },
+          scales: {
+            y: { ticks: { color: '#aaa', callback: v => '$' + (v / 1000000).toFixed(1) + 'M' }, grid: { color: '#333' } },
+            x: { ticks: { color: '#aaa' }, grid: { display: false } }
+          },
+          responsive: true,
+        }
+      });
+
+      // Price range legend
+      document.getElementById('priceRange').innerHTML = `
+        <h3 style="color:#aaa; font-size:13px; margin-bottom:12px;">Secret Price Constraints</h3>
+        <div class="range-line"><div class="range-dot" style="background:#d4af37;"></div> <span><strong>Lucia's</strong> sell minimum: <strong style="color:#d4af37;">$4.9M</strong> (won't sell below this)</span></div>
+        <div class="range-line"><div class="range-dot" style="background:#d4af37; opacity:0.5;"></div> <span><strong>Lucia's</strong> buy maximum: <strong style="color:#d4af37;">$4.35M</strong> (can't afford more)</span></div>
+        <div class="range-line"><div class="range-dot" style="background:#60a5fa;"></div> <span><strong>Marco's</strong> buy maximum: <strong style="color:#60a5fa;">$4.25M</strong> (investor deal weakens above this)</span></div>
+        <div class="range-line"><div class="range-dot" style="background:#60a5fa; opacity:0.5;"></div> <span><strong>Marco's</strong> sell minimum: <strong style="color:#60a5fa;">$4.25M</strong></span></div>
+        <div style="margin-top:12px; padding:12px; background:#3a3a4e; border-radius:6px; font-size:13px; color:#aaa;">
+          <strong style="color:#d4af37;">Gold bars</strong> = Shotgun mechanism | <strong style="color:#60a5fa;">Blue bars</strong> = Timed Auction mechanism
+        </div>
+      `;
+    }
+
+    // ─── PAIR OUTCOMES TABLE ─────────────────────────
+    function renderPairOutcomes(p3) {
+      if (p3.totalPairs === 0) {
+        document.getElementById('pairCard').classList.add('hidden');
+        return;
+      }
+
       const tbody = document.getElementById('pairTableBody');
       tbody.innerHTML = p3.pairs.map(p => {
+        const mechTag = p.chosenMechanism === 'shotgun'
+          ? '<span class="tag tag-shotgun">Shotgun</span>'
+          : p.chosenMechanism === 'timedauction'
+            ? '<span class="tag tag-timed">Timed</span>'
+            : '<span class="tag tag-pending">Pending</span>';
         const choiceTag = p.choice === 'buy'
           ? '<span class="tag tag-buy">BUY</span>'
           : p.choice === 'sell'
             ? '<span class="tag tag-sell">SELL</span>'
             : '<span class="tag tag-pending">Pending</span>';
+        const buyerDisplay = p.buyerName
+          ? `${p.buyerName} <span style="color:#888; font-size:11px;">(${p.buyerRole === 'lucia' ? 'Lucia' : 'Marco'})</span>`
+          : '--';
         return `<tr>
           <td>${p.partnerA}</td>
           <td>${p.partnerB}</td>
-          <td>${p.offer ? '$' + p.offer.toLocaleString() : '--'}</td>
-          <td>${choiceTag}</td>
+          <td>${mechTag}</td>
           <td>${p.finalPrice ? '$' + p.finalPrice.toLocaleString() : '--'}</td>
+          <td>${choiceTag}</td>
+          <td>${buyerDisplay}</td>
         </tr>`;
       }).join('');
+    }
 
-      // Price bar chart
-      if (prices.length > 0) {
-        const pairLabels = p3.pairs.filter(p => p.finalPrice).map((p, i) => `Pair ${i + 1}`);
-        const pairColors = p3.pairs.filter(p => p.finalPrice).map(p => p.choice === 'buy' ? '#4ade80' : '#f87171');
-        new Chart(document.getElementById('priceChart'), {
-          type: 'bar',
-          data: {
-            labels: pairLabels,
-            datasets: [{ label: 'Final Price ($)', data: prices, backgroundColor: pairColors, borderRadius: 4 }]
-          },
-          options: {
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { beginAtZero: true, ticks: { color: '#aaa', callback: v => '$' + (v / 1000000).toFixed(1) + 'M' }, grid: { color: '#333' } },
-              x: { ticks: { color: '#aaa' }, grid: { display: false } }
-            },
-            responsive: true,
-          }
-        });
+    // ─── DISCUSSION PROMPTS ──────────────────────────
+    function renderDiscussion(p3) {
+      if (p3.totalPairs === 0) {
+        document.getElementById('discussionCard').classList.add('hidden');
+        return;
       }
+
+      const completed = p3.pairs.filter(p => p.finalPrice);
+      const prices = completed.map(p => p.finalPrice);
+      const luciaFloor = p3.luciaFloorSell || 4900000;
+      const marcoCeiling = p3.marcoCeilingBuy || 4250000;
+
+      let prompts = [];
+
+      // Price range analysis
+      if (prices.length > 0) {
+        const avg = p3.priceStats.avg;
+        const belowMarco = prices.filter(p => p <= marcoCeiling).length;
+        const aboveLucia = prices.filter(p => p >= luciaFloor).length;
+        const inBetween = prices.filter(p => p > marcoCeiling && p < luciaFloor).length;
+
+        prompts.push(`<strong>${completed.length}</strong> pairs completed negotiations. The average transaction price was <strong>$${avg.toLocaleString()}</strong>.`);
+
+        if (belowMarco > 0) {
+          prompts.push(`<strong>${belowMarco}</strong> pair(s) settled at or below Marco's buy ceiling ($4.25M). These Lucias may have undervalued their position or felt pressure to close.`);
+        }
+        if (aboveLucia > 0) {
+          prompts.push(`<strong>${aboveLucia}</strong> pair(s) settled at or above Lucia's sell floor ($4.9M). These Marcos may have overpaid relative to their secret constraint.`);
+        }
+        if (inBetween > 0) {
+          prompts.push(`<strong>${inBetween}</strong> pair(s) settled between Marco's ceiling and Lucia's floor — a zone where neither side's secret constraint was fully satisfied.`);
+        }
+      }
+
+      // Mechanism comparison
+      const ms = p3.mechanismStats;
+      if (ms.shotgunCount > 0 && ms.timedAuctionCount > 0) {
+        const shotgunPrices = completed.filter(p => p.chosenMechanism === 'shotgun').map(p => p.finalPrice);
+        const timedPrices = completed.filter(p => p.chosenMechanism === 'timedauction').map(p => p.finalPrice);
+        if (shotgunPrices.length && timedPrices.length) {
+          const avgShotgun = Math.round(shotgunPrices.reduce((a, b) => a + b, 0) / shotgunPrices.length);
+          const avgTimed = Math.round(timedPrices.reduce((a, b) => a + b, 0) / timedPrices.length);
+          prompts.push(`Shotgun pairs averaged <strong>$${avgShotgun.toLocaleString()}</strong> vs Timed Auction pairs at <strong>$${avgTimed.toLocaleString()}</strong>. Did the mechanism affect the price?`);
+        }
+      }
+
+      // Buyer role analysis
+      const luciaBuyers = completed.filter(p => p.buyerRole === 'lucia').length;
+      const marcoBuyers = completed.filter(p => p.buyerRole === 'marco').length;
+      if (luciaBuyers > 0 || marcoBuyers > 0) {
+        prompts.push(`<strong>${luciaBuyers}</strong> Lucia(s) ended up buying vs <strong>${marcoBuyers}</strong> Marco(s). Given Marco's secret investor backing and Lucia's limited cash, who had the stronger buying position?`);
+      }
+
+      // Agreement vs random
+      if (ms.disagreedCount > 0) {
+        prompts.push(`<strong>${ms.disagreedCount}</strong> pair(s) disagreed on mechanism and were randomly assigned. Did the randomly assigned mechanism lead to different outcomes?`);
+      }
+
+      const el = document.getElementById('discussionPrompts');
+      el.innerHTML = prompts.map(p => `<div class="insight-box">${p}</div>`).join('');
     }
 
     // ─── CROSS ANALYSIS ──────────────────────────────
@@ -356,7 +519,6 @@
         return;
       }
 
-      // Build name -> votes mapping
       const nameMap = {};
       data.phase1.votes.forEach(v => { nameMap[v.name] = { phase1: v.choice }; });
       data.phase2.votes.forEach(v => {
@@ -373,7 +535,6 @@
       });
       html += '</tbody></table>';
 
-      // Correlation: what did oppression voters choose in Phase 2?
       const correlations = {};
       ['oppression', 'dissolution', 'partnership'].forEach(p1 => {
         correlations[p1] = { buyout: 0, shotgun: 0, timedauction: 0, liquidation: 0 };

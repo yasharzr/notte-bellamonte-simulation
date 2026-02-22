@@ -300,18 +300,32 @@ function renderPhase3() {
   }
 
   container.innerHTML = pairs.map(p => {
-    const statusLabel = p.status === 'complete' ? '✓ Complete' : p.status.replace(/_/g, ' ').toUpperCase();
+    let statusLabel;
+    if (p.status === 'complete') statusLabel = '✓ Complete';
+    else if (p.status === 'choosing_mechanism') statusLabel = 'Choosing Mechanism';
+    else statusLabel = p.status.replace(/_/g, ' ').toUpperCase();
+
     const isComplete = p.status === 'complete';
-    const remedyText = p.finalPrice ? `${p.shotgunChoice === 'buy' ? p.partnerB.name : p.partnerA.name} ${p.shotgunChoice === 'buy' ? 'bought' : 'sold'} at $${p.finalPrice.toLocaleString()}` : '--';
+
+    // Mechanism info
+    let mechInfo = '';
+    if (p.chosenMechanism) {
+      const mechLabel = p.chosenMechanism === 'shotgun' ? 'Shotgun' : 'Timed Auction';
+      const agreeLabel = p.mechanismAgreed ? '(agreed)' : '(random)';
+      mechInfo = `<div style="font-size:11px; color:#d4af37;">${mechLabel} ${agreeLabel}</div>`;
+    }
+
+    const priceInfo = p.finalPrice ? `$${p.finalPrice.toLocaleString()}` : (p.shotgunOffer ? `Offer: $${p.shotgunOffer.toLocaleString()}` : '--');
+    const choiceInfo = p.shotgunChoice ? (p.shotgunChoice === 'buy' ? 'BUY' : 'SELL') : '--';
 
     return `
       <div class="pair-row ${isComplete ? 'complete' : ''}">
         <div class="pair-names">
-          <strong>${p.partnerA.name}</strong> vs <strong>${p.partnerB.name}</strong>
+          <strong>${p.partnerA.name}</strong> (Lucia) vs <strong>${p.partnerB.name}</strong> (Marco)
         </div>
-        <div>Offer: $${p.shotgunOffer ? p.shotgunOffer.toLocaleString() : '--'}</div>
-        <div>Choice: ${p.shotgunChoice || '--'}</div>
-        <div>Final: ${remedyText}</div>
+        ${mechInfo}
+        <div>Price: ${priceInfo}</div>
+        <div>Choice: ${choiceInfo}</div>
         <div class="status">${statusLabel}</div>
       </div>
     `;
