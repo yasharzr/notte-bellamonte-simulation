@@ -270,24 +270,19 @@ function renderPhase(sessionData) {
           remedy: '',
         });
       }
-    } else if (p3Stage === 'negotiation' || currentPair.status === 'offered' || currentPair.status === 'waiting_for_offer' || currentPair.status === 'waiting_for_final_choice') {
-      if (p3Stage !== 'negotiation') {
-        // Jump to negotiation (shotgun only for now)
-        hideAllP3Stages();
-        p3Stage = 'negotiation';
-        showNegotiation();
-      }
+    } else if (p3Stage === 'negotiation') {
+      // Already in negotiation stage — stay there
     } else if (p3Stage === 'brief') {
       // Already showing briefing
     } else if (p3Stage === 'reveal') {
       // Already showing role reveal
     } else {
-      // Fresh entry — start the Phase 3 flow
+      // Fresh entry or reconnect — decide what to show
       if (currentPair.status === 'complete') {
         hideAllP3Stages();
         showOutcome({ choice: currentPair.shotgunChoice, finalPrice: currentPair.finalPrice, remedy: '' });
-      } else if (currentPair.status === 'offered' || currentPair.status === 'waiting_for_offer' || currentPair.status === 'waiting_for_final_choice') {
-        // Reconnect into active negotiation
+      } else if (currentPair.status === 'offered' || currentPair.status === 'waiting_for_final_choice') {
+        // Reconnect into active negotiation (offer already made)
         p3Stage = 'negotiation';
         hideAllP3Stages();
         showNegotiation();
@@ -297,7 +292,7 @@ function renderPhase(sessionData) {
         hideAllP3Stages();
         showNegotiation();
       } else {
-        // Start from role reveal
+        // First time entering Phase 3 — start from role reveal
         showRoleReveal();
       }
     }
