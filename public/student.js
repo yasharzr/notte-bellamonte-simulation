@@ -402,23 +402,6 @@ function showRoleReveal() {
   const name = isLucia ? 'LUCIA BELLAMONTE' : 'MARCO BELLAMONTE';
   const cls = isLucia ? 'lucia' : 'marco';
 
-  // Get partner info from currentPair
-  const partner = currentPair
-    ? (currentPair.partnerA.id === participantId ? currentPair.partnerB : currentPair.partnerA)
-    : null;
-
-  const partnerSection = partner ? `
-    <div style="margin:24px 0; padding:20px; background:rgba(0,0,0,0.3); border:1px solid rgba(212,175,55,0.3); border-radius:10px;">
-      <div style="font-size:13px; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Your Negotiation Partner</div>
-      <div style="font-size:22px; font-weight:700; color:#fff;">${partner.name}</div>
-      <div style="font-size:13px; color:${isLucia ? '#7c8a9e' : '#d4af37'}; margin-top:4px;">Playing as ${partner.role}</div>
-    </div>
-    <div style="margin-bottom:24px; padding:16px; background:rgba(251,191,36,0.1); border-left:3px solid #fbbf24; border-radius:4px; text-align:left;">
-      <p style="font-size:14px; color:#fbbf24; font-weight:600; margin-bottom:6px;">Before You Proceed</p>
-      <p style="font-size:13px; color:#ccc; line-height:1.6;">Find <strong style="color:#fff;">${partner.name}</strong> in class and conduct your negotiation in person first. Once you have reached an agreement (or failed to), return here to execute the formal shotgun transaction.</p>
-    </div>
-  ` : '';
-
   container.innerHTML = `
     <div class="role-reveal ${cls}">
       <div class="role-label-big">Your Role</div>
@@ -427,7 +410,6 @@ function showRoleReveal() {
         ? 'I helped build this legacy for 30 years, and I won\'t be pushed aside by my own nephew.'
         : 'I\'m glad you chose the only correct side in this dispute, because there\'s no way I\'m in the wrong.'
       }"</div>
-      ${partnerSection}
       <button class="button" onclick="goToCharacterBrief()" style="max-width:300px; margin:0 auto;">Continue</button>
     </div>
   `;
@@ -462,7 +444,22 @@ function goToCharacterBrief() {
 function renderCharacterBrief(container, role, char) {
   const cls = role === 'lucia' ? 'lucia' : 'marco';
 
+  // Get opponent info
+  const partner = currentPair
+    ? (currentPair.partnerA.id === participantId ? currentPair.partnerB : currentPair.partnerA)
+    : null;
+
+  const opponentSection = partner ? `
+    <div style="margin-bottom:20px; padding:16px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); border-radius:8px; text-align:center;">
+      <div style="font-size:12px; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Your Opponent</div>
+      <div style="font-size:18px; font-weight:700; color:#fff;">${partner.name}</div>
+      <div style="font-size:13px; color:${role === 'lucia' ? '#7c8a9e' : '#d4af37'}; margin-top:4px;">Playing as ${partner.role}</div>
+    </div>
+  ` : '';
+
   let html = `
+    ${opponentSection}
+
     <div class="dossier">
       <div class="dossier-header ${cls}">${char.name}: Case File</div>
       <div class="dossier-section">
@@ -495,7 +492,25 @@ function renderCharacterBrief(container, role, char) {
       </div>
     </div>
 
-    <button class="button" onclick="goToNegotiation()" style="margin-top:20px;">I Understand My Position: Proceed</button>
+    <div style="margin-top:20px; padding:20px; background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.25); border-radius:10px;">
+      <h3 style="color:#d4af37; margin-bottom:12px; font-size:16px; text-align:center;">How the Shotgun Sale Works</h3>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:#ccc; line-height:1.6;">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <span style="background:#d4af37; color:#000; font-weight:800; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">1</span>
+          <span>One party (the <strong style="color:#fff;">Offeror</strong>) names a price for their 50% of the company.</span>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <span style="background:#d4af37; color:#000; font-weight:800; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">2</span>
+          <span>The other party (the <strong style="color:#fff;">Responder</strong>) must then choose: <strong style="color:#4ade80;">BUY</strong> the offeror's shares at that price, or <strong style="color:#f87171;">SELL</strong> their own shares at that price.</span>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <span style="background:#d4af37; color:#000; font-weight:800; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">3</span>
+          <span>This mechanism is self-policing: the offeror must price fairly because they could end up on either side of the deal.</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="button" onclick="goToNegotiation()" style="margin-top:20px;">I Understand My Position: Proceed to Shotgun</button>
   `;
 
   container.innerHTML = html;

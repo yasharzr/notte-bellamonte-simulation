@@ -52,11 +52,11 @@ const CHARACTER_DATA = {
     weaknesses: 'What I wanted to do with the company is different from how the company has operated over the last several decades, so other peoples\' expectations are not being met. Although I personally wouldn\'t consider this a weakness, some would argue that my pay package increase (which can be done without majority approval) and my lack of declaring dividends is a weakness. In my humble opinion, I did not declare dividends for Lucia because that money is better used for the expansion of the company, after all, money does not grow on trees.',
     secrets: [
       { label: 'The Bluff', text: 'I am merely using equitable dissolution as a bluff. Truthfully, I hope my willingness to destroy this company makes Lucia scared enough to back off and give me control of the company. I figured if I simply tried to buy her shares outright, she might resist, but if I threatened to dissolve the company itself, she might be willing to concede her shares to me. If the court does not decide on equitable dissolution, I am fine with that as long as the court does not deem my conduct to be oppressive.' },
-      { label: 'Buying Price', text: 'If I were to buy her shares, I am willing to spend up to $4.25 million to acquire her shares. I have financial backing from outside investors who are interested in my grand plan to expand the company. Given the company\'s likely worth around $10 million, Lucia may expect $5 million for her shares, which is why I want to threaten her with equitable dissolution in hopes of Lucia willing to accept a lower price.' },
-      { label: 'Cash Position', text: 'Between personal funds and investor commitments, I have access to up to $4.5 million for this acquisition.' },
+      { label: 'Buying Price', text: 'If I were to buy her shares, I am willing to spend up to $4.8 million to acquire her shares. I have financial backing from outside investors who are interested in my grand plan to expand the company. Given the company\'s likely worth around $10 million, Lucia may expect $5 million for her shares, which is why I want to threaten her with equitable dissolution in hopes of Lucia willing to accept a lower price.' },
+      { label: 'Selling Price', text: 'If I were to sell my shares, my minimum is $5 million. I will not accept less than what I believe my half of the company is worth. Between personal funds and investor commitments, I have access to significant capital for this acquisition.' },
     ],
-    floorSell: 4250000,
-    ceilingBuy: 4250000,
+    floorSell: 5000000,
+    ceilingBuy: 4800000,
   },
 };
 
