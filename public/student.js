@@ -230,7 +230,14 @@ function renderPhase(sessionData) {
   };
 
   document.getElementById('phaseText').textContent = phaseText[currentPhase] || 'Unknown phase';
-  document.getElementById('phaseBadge').textContent = currentPhase.toUpperCase();
+  const phaseBadgeLabels = {
+    lobby: 'LOBBY',
+    phase_1_debate: 'PHASE 1',
+    phase_2_remedy: 'PHASE 2',
+    phase_3_buysell: 'PHASE 3',
+    complete: 'COMPLETE',
+  };
+  document.getElementById('phaseBadge').textContent = phaseBadgeLabels[currentPhase] || currentPhase.toUpperCase();
 
   if (currentPhase === 'phase_1_debate') {
     document.getElementById('phase1Container').classList.remove('hidden');
@@ -444,7 +451,7 @@ function renderCharacterBrief(container, role, char) {
 
   let html = `
     <div class="dossier">
-      <div class="dossier-header ${cls}">${char.name} — Case File</div>
+      <div class="dossier-header ${cls}">${char.name}: Case File</div>
       <div class="dossier-section">
         <div class="dossier-label">My Position</div>
         <div class="dossier-text">${char.position}</div>
@@ -464,7 +471,7 @@ function renderCharacterBrief(container, role, char) {
     </div>
 
     <div class="classified-box">
-      <div class="classified-stamp">Classified — For Your Eyes Only</div>
+      <div class="classified-stamp">Classified: For Your Eyes Only</div>
       <div class="classified-body">
         ${char.secrets.map(s => `
           <div class="secret-item">
@@ -475,7 +482,7 @@ function renderCharacterBrief(container, role, char) {
       </div>
     </div>
 
-    <button class="button" onclick="goToNegotiation()" style="margin-top:20px;">I Understand My Position — Proceed</button>
+    <button class="button" onclick="goToNegotiation()" style="margin-top:20px;">I Understand My Position: Proceed</button>
   `;
 
   container.innerHTML = html;
@@ -571,7 +578,7 @@ function showMechanismResult(data) {
       <h3 style="color:#d4af37; margin-bottom:16px;">Mechanism Selected</h3>
       <div style="font-size:32px; font-weight:800; color:#d4af37; margin:20px 0;">${mechLabel}</div>
       <p style="color:#aaa; font-size:14px; margin-bottom:20px;">
-        ${agreed ? 'You both agreed!' : 'You disagreed — this was randomly selected.'}
+        ${agreed ? 'You both agreed!' : 'You disagreed, so this was randomly selected.'}
       </p>
       <button class="button" onclick="goToNegotiation()" style="max-width:300px; margin:0 auto;">Begin Negotiation</button>
     </div>
@@ -793,7 +800,7 @@ function startTimedAuctionClock(startTime, startPrice, dropPerSecond) {
 
   container.innerHTML = `
     <div class="card" style="text-align:center;">
-      <h3 style="color:#d4af37; margin-bottom:8px;">Timed Auction — LIVE</h3>
+      <h3 style="color:#d4af37; margin-bottom:8px;">Timed Auction: LIVE</h3>
       <p style="color:#f87171; margin-bottom:6px; font-size:14px; font-weight:700;">Price is dropping!</p>
       <p style="color:#888; margin-bottom:20px; font-size:13px;">First to lock sets the price. The other chooses BUY or SELL.</p>
       <div class="big-price dropping" id="timedPriceDisplay">$${currentPrice.toLocaleString()}</div>

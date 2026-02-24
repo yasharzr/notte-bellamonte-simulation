@@ -82,7 +82,14 @@ function renderDashboard() {
   // Update header
   document.getElementById('sessionDisplay').textContent = sessionId;
   document.getElementById('participantCount').textContent = sessionData.participants.length;
-  document.getElementById('phaseDisplay').textContent = currentPhase.toUpperCase();
+  const phaseBadgeLabels = {
+    lobby: 'LOBBY',
+    phase_1_debate: 'PHASE 1',
+    phase_2_remedy: 'PHASE 2',
+    phase_3_buysell: 'PHASE 3',
+    complete: 'COMPLETE',
+  };
+  document.getElementById('phaseDisplay').textContent = phaseBadgeLabels[currentPhase] || currentPhase.toUpperCase();
 
   // Show analytics button
   const analyticsBtn = document.getElementById('analyticsBtn');
