@@ -407,6 +407,23 @@ function showRoleReveal() {
   const name = isLucia ? 'LUCIA BELLAMONTE' : 'MARCO BELLAMONTE';
   const cls = isLucia ? 'lucia' : 'marco';
 
+  // Get partner info from currentPair
+  const partner = currentPair
+    ? (currentPair.partnerA.id === participantId ? currentPair.partnerB : currentPair.partnerA)
+    : null;
+
+  const partnerSection = partner ? `
+    <div style="margin:24px 0; padding:20px; background:rgba(0,0,0,0.3); border:1px solid rgba(212,175,55,0.3); border-radius:10px;">
+      <div style="font-size:13px; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Your Negotiation Partner</div>
+      <div style="font-size:22px; font-weight:700; color:#fff;">${partner.name}</div>
+      <div style="font-size:13px; color:${isLucia ? '#7c8a9e' : '#d4af37'}; margin-top:4px;">Playing as ${partner.role}</div>
+    </div>
+    <div style="margin-bottom:24px; padding:16px; background:rgba(251,191,36,0.1); border-left:3px solid #fbbf24; border-radius:4px; text-align:left;">
+      <p style="font-size:14px; color:#fbbf24; font-weight:600; margin-bottom:6px;">Before You Proceed</p>
+      <p style="font-size:13px; color:#ccc; line-height:1.6;">Find <strong style="color:#fff;">${partner.name}</strong> in class and conduct your negotiation in person first. Once you have reached an agreement (or failed to), return here to execute the formal shotgun transaction.</p>
+    </div>
+  ` : '';
+
   container.innerHTML = `
     <div class="role-reveal ${cls}">
       <div class="role-label-big">Your Role</div>
@@ -415,6 +432,7 @@ function showRoleReveal() {
         ? 'I helped build this legacy for 30 years, and I won\'t be pushed aside by my own nephew.'
         : 'I\'m glad you chose the only correct side in this dispute, because there\'s no way I\'m in the wrong.'
       }"</div>
+      ${partnerSection}
       <button class="button" onclick="goToCharacterBrief()" style="max-width:300px; margin:0 auto;">Continue</button>
     </div>
   `;
